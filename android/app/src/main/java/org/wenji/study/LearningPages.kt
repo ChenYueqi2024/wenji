@@ -58,13 +58,14 @@ import java.time.format.DateTimeFormatter
             if(state=="needs_review") Notice("来源已变更，旧解释暂不能作为当前依据。",Tone.Red)
             if(answer==null) {
                 Text("从本课程资料中寻找可以核对的原文。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodyMedium)
-                PrimaryAction("查找依据",{model.mutate("/questions/${q.getString("id")}/explain"){expanded=true}},model.canWrite(),Glyph.Search)
+                PrimaryAction("查找依据",{model.requestExplain(q.getString("id")){expanded=true}},model.canWrite(),Glyph.Search)
             } else {
+                Text("本条解释 · ${answerProviderLabel(answer.optString("provider"))}",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
                 if(!expanded && answer.objects("claims").isNotEmpty()) Text(answer.objects("claims").first().optString("text"),maxLines=2,overflow=TextOverflow.Ellipsis,color=WenjiColors.Muted,style=MaterialTheme.typography.bodyMedium)
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     TextButton(onClick={expanded=!expanded},contentPadding=PaddingValues(0.dp)) { Text(if(expanded) "收起解释与引用" else "查看解释与引用");Spacer(Modifier.width(6.dp));LineIcon(if(expanded) Glyph.Down else Glyph.Right,Modifier.size(16.dp),WenjiColors.Teal) }
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick={model.mutate("/questions/${q.getString("id")}/explain"){expanded=true}},enabled=model.canWrite()) { Text(if(state=="needs_review") "重新找依据" else "重新检索",style=MaterialTheme.typography.bodySmall) }
+                    TextButton(onClick={model.requestExplain(q.getString("id")){expanded=true}},enabled=model.canWrite()) { Text(if(state=="needs_review") "重新找依据" else "重新检索",style=MaterialTheme.typography.bodySmall) }
                 }
                 if(expanded) {
                     HorizontalDivider()

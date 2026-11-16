@@ -1,0 +1,43 @@
+{
+  "active_profile": "compatible",
+  "profiles": {
+    "compatible": {
+      "label": "自选 OpenAI 兼容服务",
+      "protocol": "openai_chat",
+      "base_url": "https://api.example.com/v1",
+      "model": "YOUR_MODEL_ID",
+      "api_key_env": "WENJI_MODEL_API_KEY",
+      "timeout_seconds": 45,
+      "compatibility": { "chat_token_parameter": "max_tokens", "json_mode": true, "send_store": false },
+      "generation": { "max_output_tokens": 2400 }
+    },
+    "responses": {
+      "label": "Responses 协议服务",
+      "protocol": "openai_responses",
+      "base_url": "https://api.openai.com/v1",
+      "model": "YOUR_MODEL_ID",
+      "api_key_env": "WENJI_MODEL_API_KEY"
+    },
+    "anthropic": {
+      "label": "Anthropic Messages 服务",
+      "protocol": "anthropic_messages",
+      "base_url": "https://api.anthropic.com/v1",
+      "model": "YOUR_MODEL_ID",
+      "api_key_env": "WENJI_MODEL_API_KEY"
+    },
+    "gemini": {
+      "label": "Gemini 原生服务",
+      "protocol": "gemini_generate_content",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "YOUR_MODEL_ID",
+      "api_key_env": "WENJI_MODEL_API_KEY"
+    },
+    "local": {
+      "label": "本机兼容模型服务",
+      "protocol": "openai_chat",
+      "base_url": "http://127.0.0.1:11434/v1",
+      "model": "YOUR_LOCAL_MODEL_ID",
+      "auth_mode": "none"
+    }
+  }
+}

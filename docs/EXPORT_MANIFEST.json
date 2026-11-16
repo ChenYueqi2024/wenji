@@ -10,12 +10,17 @@
     "private contest and identity documents",
     "external delivery scripts"
   ],
-  "source_file_count": 45,
+  "source_file_count": 54,
   "source_files": [
+    {
+      "path": "MODEL_SETUP.txt",
+      "bytes": 6892,
+      "sha256": "dee4ec5818af486bb597010c6b1cf3f04b666cdd649b3644c999e0e8896a0447"
+    },
     {
       "path": "android/app/build.gradle.kts",
       "bytes": 1290,
-      "sha256": "003f82b6207128b44498076287b9154004edb2e3cd36084251ea81d60700fefe"
+      "sha256": "45a1c9e8478d59dbbe439f68a1e58d9f2e6e973f51c152e6ccb6bfb1d6b98602"
     },
     {
       "path": "android/app/schemas/org.wenji.study.LocalStore/1.json",
@@ -34,8 +39,8 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/LearningPages.kt",
-      "bytes": 14318,
-      "sha256": "d781abe30e50b1bd005fb16705bd2c1a5426dacdac252b05dcd5a993dca91244"
+      "bytes": 14444,
+      "sha256": "d65bf2963dc73a33ed0c689cba4da8b7325e1e764161bb7cc13236881e344a8f"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/LocalStore.kt",
@@ -44,8 +49,13 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/MainActivity.kt",
-      "bytes": 12872,
-      "sha256": "1ab287e6b4e38f91de20bf458d4f49022ee9d98426ef6334b15b3d7415a05251"
+      "bytes": 15705,
+      "sha256": "41f466b3da0cf93151a7b7bc4591d9d989d850c55b68ae2da3121bbd99261a7a"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/ModelInfo.kt",
+      "bytes": 2611,
+      "sha256": "777c813a6edaf297860c3de95fda8b53f6c14603f069327a7c91b63b964276fd"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/SourcePage.kt",
@@ -59,8 +69,8 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/WenjiModel.kt",
-      "bytes": 8469,
-      "sha256": "c5080962527f049720d67d5613cdb3c7080ba4fb3e93dcf6f2e72eae577aaee0"
+      "bytes": 11815,
+      "sha256": "549e83d357b4a19e940f7b9acd737731e99cfdb3d6126d5a2f9c6b6233a33105"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/WenjiUi.kt",
@@ -91,6 +101,11 @@
       "path": "android/app/src/test/java/org/wenji/study/EditorSessionTest.kt",
       "bytes": 1881,
       "sha256": "006dc7db272304cfec9d390b5f87aed84264de6e87e1616bc50fa51a30fdf192"
+    },
+    {
+      "path": "android/app/src/test/java/org/wenji/study/ModelInfoTest.kt",
+      "bytes": 2972,
+      "sha256": "0188e3f9581d496084fbb98d056201ddbefcb04ac65d844d304de5d6e04df978"
     },
     {
       "path": "android/app/src/test/java/org/wenji/study/StorageChunksTest.kt",
@@ -143,6 +158,11 @@
       "sha256": "94d09cdc33b382754905e19d1e2709b537bfc1570ef678d8c56877afae046b71"
     },
     {
+      "path": "config/models.example.json",
+      "bytes": 1392,
+      "sha256": "229868d1ac77835554f71413979a8414cc80d36d577a1a18fb85ffcd66aa8e4e"
+    },
+    {
       "path": "fixtures/conflicting_material.txt",
       "bytes": 164,
       "sha256": "335bbb24772af0e587db1454295579817493d78a8d6cfe23852af21ba1a94110"
@@ -174,8 +194,8 @@
     },
     {
       "path": "scripts/connect_mumu.ps1",
-      "bytes": 1924,
-      "sha256": "52acfe1f09cb8ff8795fa39cdc69aebe2a23723b8296c02426c6d17980b92439"
+      "bytes": 1951,
+      "sha256": "08224428aa6da75947a08853c33371b3f767f0952b3cf138682f613e4d9e2eff"
     },
     {
       "path": "scripts/http_smoke.py",
@@ -183,19 +203,29 @@
       "sha256": "d1f7d6afca8dc221a1f4639364abeda007568661e4341380119476d08e460a27"
     },
     {
+      "path": "scripts/model_http_smoke.py",
+      "bytes": 6197,
+      "sha256": "f0afaab9f293a0bc945981c81cd400b86f801f06d30017453ca00664046e194a"
+    },
+    {
       "path": "scripts/python_runtime.ps1",
       "bytes": 595,
       "sha256": "d9241d25784ad92a99ad4f8b3f5bd71369f99e26ca98fa7ca744342d5941f8fb"
     },
     {
+      "path": "scripts/run_model_service.ps1",
+      "bytes": 2064,
+      "sha256": "9e963429ce78192a3c95432775f9e3fdc464e947838b2188d703f9d06d75364a"
+    },
+    {
       "path": "scripts/run_service.ps1",
-      "bytes": 679,
-      "sha256": "fde3fc3f872675a44c06face50e2a5238fc9687aa08a642b2edbf9a081e8991e"
+      "bytes": 916,
+      "sha256": "c597bab8c63d5f2ef3dcc931fe822b09d1a95767441ba544c358f959bf5da7f7"
     },
     {
       "path": "scripts/test.ps1",
-      "bytes": 774,
-      "sha256": "4a887a987fde677f1317f6b1ba550c89966ccc01f08218fab836842b801bcea4"
+      "bytes": 1025,
+      "sha256": "00e518966db0b8c74ba003940c72e5152611f1dfa647c4e15fad40d9dacccc74"
     },
     {
       "path": "server/__init__.py",
@@ -204,18 +234,23 @@
     },
     {
       "path": "server/__main__.py",
-      "bytes": 4542,
-      "sha256": "8937d9d73f25fb8df7d0ea694e6c5086ffa75e5808504a65ebc458d4b8392c27"
+      "bytes": 5172,
+      "sha256": "3d66ee70828c62b57e5daf33db305d2bca3fe358c898af8965e381303c3ec393"
     },
     {
       "path": "server/core.py",
-      "bytes": 27448,
-      "sha256": "0137a2bb5dea4e77b29228d1a42dfdd6fb809c697e8763136cdf4fc24553758a"
+      "bytes": 35626,
+      "sha256": "ba0d356d052f007979114ced70a48bb3dee528c1eee7b23a2d870b4ff1c9beaf"
+    },
+    {
+      "path": "server/model_gateway.py",
+      "bytes": 25117,
+      "sha256": "67d516bc6fca09321ea14895aad5c88ce26767d37a135df61d013ddccd425ce1"
     },
     {
       "path": "server/provider.py",
-      "bytes": 4391,
-      "sha256": "23c24f56947122477b1dd48b24a42bd79e626c7d9cbee1771ca04d57e6837956"
+      "bytes": 4715,
+      "sha256": "19355f2efc34373df645d5d91523cc0f29fb0240c4259fcd23199ec50bc6ce47"
     },
     {
       "path": "server/requirements.txt",
@@ -236,6 +271,16 @@
       "path": "tests/test_input_validation.py",
       "bytes": 3909,
       "sha256": "fd0eb6c3af4489f4a0e094db0b47e696600074f2301bba6416aa2f15aa4ec6bf"
+    },
+    {
+      "path": "tests/test_model_domain.py",
+      "bytes": 17329,
+      "sha256": "fb2fd1c0c4e1a7c099dc7028a77aad086e5bed1e1c6bc8087264237ae67ab6ff"
+    },
+    {
+      "path": "tests/test_model_gateway.py",
+      "bytes": 22926,
+      "sha256": "86e52f1a840b713552540d06d4f62058a3a6dcf6ed870fbc791a22c08284053f"
     }
   ],
   "seed_documents": [

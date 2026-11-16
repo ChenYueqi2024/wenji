@@ -5,11 +5,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlsplit
 
 from .core import DomainError, Repository
+from .model_gateway import load_provider, ProviderError
 
 
 def handler_class(repo):
     class Handler(BaseHTTPRequestHandler):
-        server_version = "WenjiLocal/0.1"
+        server_version = "WenjiLocal/0.3"
 
         def log_message(self, format, *args):
             # Never log imported body, questions, identifiers or request path.
@@ -43,7 +44,8 @@ def handler_class(repo):
             def get():
                 url = urlsplit(self.path)
                 if url.path == "/health":
-                    return {"status": "ok", "mode": "local-demo", "provider": repo.provider.name, "authentication": "none-loopback-development-only"}
+                    info = repo.provider_info()
+                    return {"status": "ok", "mode": "local-llm" if info["mode"] == "llm" else "local-demo", "provider": repo.provider.name, "provider_info": info, "authentication": "none-loopback-development-only"}
                 if url.path == "/state":
                     return repo.state(parse_qs(url.query).get("course_id", ["os-default"])[0])
                 if url.path == "/search":
@@ -79,10 +81,16 @@ def main():
     parser = argparse.ArgumentParser(description="问迹本地开发服务（无账号认证，仅回环监听）")
     parser.add_argument("--db", default="data/wenji.sqlite3")
     parser.add_argument("--port", type=int, default=8765)
+    parser.add_argument("--model-config", help="本机模型配置JSON路径；不指定则使用固定案例演示，不读取隐藏默认配置")
     args = parser.parse_args()
-    repo = Repository(args.db)
+    try:
+        provider = load_provider(args.model_config)
+    except ProviderError as exc:
+        parser.exit(2, f"模型配置不可用：{exc.message}\n")
+    repo = Repository(args.db, provider=provider)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), handler_class(repo))
-    print(f"Wenji local demo: http://127.0.0.1:{args.port} (no LLM, no accounts)", flush=True)
+    mode = "configured model; calls require confirmation" if repo.provider_info()["mode"] == "llm" else "fixed-case demo; no model calls"
+    print(f"Wenji local: http://127.0.0.1:{args.port} ({mode}; no accounts)", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

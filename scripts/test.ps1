@@ -10,4 +10,6 @@ try {
     if ($LASTEXITCODE -ne 0) { throw '自动化测试失败，查看 reports/unit-tests.log。' }
     & $pythonExe -X utf8 scripts/http_smoke.py 2>&1 | Tee-Object -FilePath (Join-Path $reportRoot 'http-smoke.log')
     if ($LASTEXITCODE -ne 0) { throw 'HTTP集成测试失败，查看 reports/http-smoke.log。' }
+    & $pythonExe -X utf8 scripts/model_http_smoke.py 2>&1 | Tee-Object -FilePath (Join-Path $reportRoot 'model-http-smoke.log')
+    if ($LASTEXITCODE -ne 0) { throw '模型协议本机HTTP集成测试失败，查看 reports/model-http-smoke.log。' }
 } finally { Pop-Location }

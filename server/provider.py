@@ -25,16 +25,28 @@ class Candidate:
 
 
 @dataclass
+class Claim:
+    text: str
+    evidence: list
+
+
+@dataclass
 class Proposal:
     status: str
     evidence: list
     missing: list
     conflict: bool = False
     has_example: bool = False
+    claims: list | None = None
 
 
 class ExtractiveDemoProvider:
     name = PROVIDER_NAME
+
+    def public_info(self):
+        return {"mode": "demo", "protocol": None, "model": None, "endpoint": None,
+                "label": "确定性合成样例", "fingerprint": PROVIDER_NAME,
+                "requires_consent": False}
 
     def propose(self, question, sources):
         normalized = re.sub(r"[\s，,？?。！!]", "", question)

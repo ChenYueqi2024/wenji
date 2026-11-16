@@ -16,6 +16,11 @@ __pycache__/
 .env
 .env.*
 !.env.example
+*.local.json
+*.local.ps1
+*.pem
+*.key
+*.dpapi
 
 # Android local SDK, generated files and signing material
 **/.gradle/

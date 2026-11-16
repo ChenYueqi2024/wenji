@@ -20,7 +20,7 @@ if (-not $health) {
     Start-Sleep -Seconds 2
     $health = Invoke-RestMethod -Uri 'http://127.0.0.1:8765/health' -TimeoutSec 3
 }
-if ($health.mode -ne 'local-demo' -or $health.provider -ne 'deterministic-extractive-v1') { throw '8765端口不是预期的问迹开发服务，请检查占用。' }
+if ($health.authentication -ne 'none-loopback-development-only' -or $health.mode -notin @('local-demo','local-llm')) { throw '8765端口不是预期的问迹开发服务，请检查占用。' }
 & (Join-Path $runtimeRoot 'android/install-debug.ps1') -DeviceId $device -IncludeFixtures
 & $adb -s $device shell am start -n org.wenji.study/.MainActivity
 if ($LASTEXITCODE -ne 0) { throw '应用启动失败。' }

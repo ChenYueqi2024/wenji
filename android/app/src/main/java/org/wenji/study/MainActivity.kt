@@ -68,9 +68,9 @@ private fun WenjiApp(model: WenjiModel = viewModel()) {
                             }
                         }
                         Surface(onClick={showStatus=true},shape=RoundedCornerShape(50),color=WenjiColors.AmberSoft) {
-                            Text("规则演示",Modifier.padding(horizontal=10.dp,vertical=6.dp),color=WenjiColors.Amber,style=MaterialTheme.typography.labelMedium)
+                            Text(model.providerInfo.badge + if(model.providerConfigurationFresh) "" else " · 缓存",Modifier.padding(horizontal=10.dp,vertical=6.dp),color=WenjiColors.Amber,style=MaterialTheme.typography.labelMedium)
                         }
-                        IconButton(onClick={showStatus=true},modifier=Modifier.size(36.dp).semantics { contentDescription="连接与演示说明" }) { LineIcon(Glyph.Info,color=if(model.connected) WenjiColors.Teal else WenjiColors.Amber) }
+                        IconButton(onClick={showStatus=true},modifier=Modifier.size(36.dp).semantics { contentDescription="连接与模型说明" }) { LineIcon(Glyph.Info,color=if(model.connected) WenjiColors.Teal else WenjiColors.Amber) }
                     }
                 }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -100,6 +100,25 @@ private fun WenjiApp(model: WenjiModel = viewModel()) {
         }
     }
     if(showStatus) StatusDialog(model) { showStatus=false }
+    model.explainConsent?.let { consent -> ExplainConsentDialog(model, consent) }
+}
+
+@Composable private fun ExplainConsentDialog(model: WenjiModel, consent: ExplainConsent) {
+    AlertDialog(onDismissRequest=model::cancelExplain,title={Text("确认本次模型请求",style=MaterialTheme.typography.titleLarge)},text={
+        Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            Text("配置不代表服务可用；本次调用将在确认后尝试。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            Text("提供方：${consent.provider.displayLabel}",style=MaterialTheme.typography.bodyMedium)
+            Text("模型：${consent.provider.model}",style=MaterialTheme.typography.bodyMedium)
+            Text("端点：${consent.provider.endpoint}",style=MaterialTheme.typography.bodyMedium)
+            Text("协议：${consent.provider.protocol}",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            HorizontalDivider()
+            Text("将发送的问题",style=MaterialTheme.typography.titleSmall)
+            Text(consent.question,style=MaterialTheme.typography.bodyMedium)
+            Text("本机服务还会发送从本课程资料检索出的相关片段及来源定位，不会上传整份 PDF。此确认仅适用于本次请求；重新检索需要再次确认。",style=MaterialTheme.typography.bodyMedium)
+            Text("网络中断后，同步沿用本次授权及请求编号；尚未送达时可能发起首次调用，已受理时只恢复结果。失败或配置改变后需停止旧重试，重新核对并确认。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            if(!model.providerConfigurationFresh) Notice("当前为缓存配置，请取消并同步后重新确认。",Tone.Amber)
+        }
+    },confirmButton={TextButton(onClick=model::confirmExplain,enabled=model.canWrite()&&model.providerConfigurationFresh) { Text("同意并发送本次请求") }},dismissButton={TextButton(onClick=model::cancelExplain) { Text("取消") }})
 }
 
 @Composable private fun SideNavigation(selected: Int, onSelect: (Int)->Unit) {
@@ -144,19 +163,25 @@ private fun WenjiApp(model: WenjiModel = viewModel()) {
 }
 
 @Composable private fun StatusDialog(model:WenjiModel,onDismiss:()->Unit) {
-    AlertDialog(onDismissRequest=onDismiss,title={Text("连接与演示说明",style=MaterialTheme.typography.titleLarge)},text={
+    AlertDialog(onDismissRequest=onDismiss,title={Text("连接与模型说明",style=MaterialTheme.typography.titleLarge)},text={
         Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
             Tag(if(model.connected) "服务已连接" else "当前离线",if(model.connected) Tone.Teal else Tone.Amber)
             Text(model.message,style=MaterialTheme.typography.bodyMedium)
             if(model.fetchedAt!=0L) Text("最近缓存：${SimpleDateFormat("MM-dd HH:mm:ss",Locale.CHINA).format(Date(model.fetchedAt))}。离线内容可能过期，请同步后再核对依据。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
             HorizontalDivider()
-            Text("规则演示",style=MaterialTheme.typography.titleSmall)
-            Text("当前仅支持合成教学材料中的死锁案例，使用固定规则提取依据，未接入大模型。资料仅发送到当前电脑的本地服务，不发送到模型供应商。",style=MaterialTheme.typography.bodyMedium)
+            Text(model.providerInfo.displayLabel,style=MaterialTheme.typography.titleSmall)
+            if(!model.providerConfigurationFresh) Notice("以下为缓存配置，当前模式可能已变化；同步后再发起新的解释请求。",Tone.Amber)
+            Text(model.providerInfo.description,style=MaterialTheme.typography.bodyMedium)
+            if(model.providerInfo.mode=="llm") {
+                Text("模型：${model.providerInfo.model}\n端点：${model.providerInfo.endpoint}\n协议：${model.providerInfo.protocol}",style=MaterialTheme.typography.bodySmall)
+            }
+            Text("历史解释按各条记录中的提供方标注，不随当前配置改变。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
             Text("看过解释不等于掌握。请核对原文，并在独立作答后自行确认。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
             for(write in model.writes) {
                 HorizontalDivider()
                 Text("待同步：${operationLabel(write.path)}",style=MaterialTheme.typography.titleSmall)
                 Text("重试会沿用原请求编号。停止重试不会撤销已经生效的服务操作。",style=MaterialTheme.typography.bodySmall)
+                if(write.path.endsWith("/explain")) Text("模型请求仅重试原有的单次授权；配置已变更时需停止旧重试，重新查找依据并确认。",style=MaterialTheme.typography.bodySmall)
                 TextButton(onClick={model.discardRetry(write.requestId)},enabled=!model.busy) { Text("停止重试并核对状态") }
             }
         }

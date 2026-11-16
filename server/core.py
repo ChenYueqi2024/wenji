@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS sources(id TEXT PRIMARY KEY, course_id TEXT NOT NULL,
 CREATE TABLE IF NOT EXISTS revisions(source_id TEXT NOT NULL REFERENCES sources(id), revision INTEGER NOT NULL, pages TEXT NOT NULL, sha256 TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(source_id,revision));
 CREATE TABLE IF NOT EXISTS questions(id TEXT PRIMARY KEY, course_id TEXT NOT NULL, text TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, state TEXT NOT NULL, current_answer_id TEXT);
 CREATE TABLE IF NOT EXISTS answers(id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES questions(id), status TEXT NOT NULL, missing TEXT NOT NULL, provider TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS answer_context(answer_id TEXT NOT NULL REFERENCES answers(id), source_id TEXT NOT NULL REFERENCES sources(id), revision INTEGER NOT NULL, PRIMARY KEY(answer_id,source_id));
 CREATE TABLE IF NOT EXISTS evidence(id TEXT PRIMARY KEY, source_id TEXT NOT NULL, revision INTEGER NOT NULL, page INTEGER NOT NULL, start INTEGER NOT NULL, end INTEGER NOT NULL, quote TEXT NOT NULL, sha256 TEXT NOT NULL, status TEXT NOT NULL, FOREIGN KEY(source_id,revision) REFERENCES revisions(source_id,revision));
 CREATE TABLE IF NOT EXISTS claims(id TEXT PRIMARY KEY, answer_id TEXT NOT NULL REFERENCES answers(id), text TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS claim_evidence(claim_id TEXT NOT NULL REFERENCES claims(id), evidence_id TEXT NOT NULL REFERENCES evidence(id), PRIMARY KEY(claim_id,evidence_id));
@@ -117,6 +118,7 @@ class Repository:
         self.db.execute("PRAGMA secure_delete=ON")
         self.lock = threading.RLock()
         self.provider = provider or ExtractiveDemoProvider()
+        self.generating = set()
 
     def close(self):
         self.db.close()
@@ -200,9 +202,33 @@ class Repository:
                 attempt["feedback"] = json.loads(attempt["feedback"])
                 attempt["confirmed"] = bool(attempt["confirmed"])
                 attempt["source_warning"] = "依据已变更或撤回，请重新核对；历史作答仅供查看。" if attempt.pop("card_status") == "needs_review" else None
-            return {"mode": "local-demo", "provider": self.provider.name, "course_id": course,
-                    "limitations": ["仅单机开发演示，无账号认证或跨设备同步。", "固定案例摘录与冲突规则，未接入大模型，未验证通用语义支持。", "删除不覆盖客户端旧缓存或操作系统备份；客户端同步后应替换缓存。"],
+            info = self.provider_info()
+            return {"mode": "local-llm" if info["mode"] == "llm" else "local-demo", "provider": self.provider.name, "provider_info": info, "course_id": course,
+                    "limitations": ["仅单机开发预览，无账号认证或跨设备同步。", "模型解释及引用语义仍需人工核对；结构校验不证明内容正确。" if info["mode"] == "llm" else "固定案例摘录与冲突规则，未调用大模型。", "删除不覆盖已发送给供应商的内容、客户端旧缓存或操作系统备份。"],
                     "sources": self.sources(course), "questions": questions, "cards": cards, "attempts": attempts}
+
+    def provider_info(self):
+        if hasattr(self.provider, "public_info"):
+            return self.provider.public_info()
+        return {"mode": "demo", "label": "固定案例规则演示", "protocol": "demo", "model": "", "endpoint": "",
+                "fingerprint": self.provider.name, "requires_consent": False}
+
+    def replay(self, course, request_id, fingerprint):
+        prior = self.one("SELECT * FROM requests WHERE course_id=? AND request_id=?", (course, request_id))
+        if not prior:
+            return None
+        if prior["fingerprint"] != fingerprint:
+            raise DomainError("idempotency_conflict", "相同request_id已用于不同请求，请保留原请求或使用新的ID。", 409)
+        cached = json.loads(prior["result"])
+        if cached.get("error_code") == "question_revision_conflict":
+            question = self.entity("questions", cached["question_id"], course)
+            draft = self.one("SELECT * FROM conflicts WHERE id=?", (cached["conflict_id"],))
+            raise DomainError("question_revision_conflict", "疑问版本冲突；此前提交草稿仍保留。", 409,
+                              {"current_revision": question["revision"], "current_text": question["text"],
+                               "incoming_text": draft["incoming_text"], "conflict_id": draft["id"]})
+        if cached.get("error_code"):
+            raise DomainError(cached["error_code"], cached["message"], cached.get("http_status", 409))
+        return {"result": dict(cached, replayed=True), "state": self.state(course)}
 
     def mutate(self, path, payload):
         if not isinstance(payload, dict):
@@ -213,19 +239,13 @@ class Repository:
             fingerprint = hashlib.sha256(encode({"path": path, "payload": payload}).encode()).hexdigest()
         except UnicodeEncodeError:
             raise DomainError("invalid_input", "请求含不完整的Unicode字符，请重新输入。")
+        parts = [p for p in path.split("/") if p]
+        if len(parts) == 3 and parts[0] == "questions" and parts[2] == "explain":
+            return self.explain(parts[1], payload, course, request_id, fingerprint)
         with self.lock:
-            prior = self.one("SELECT * FROM requests WHERE course_id=? AND request_id=?", (course, request_id))
+            prior = self.replay(course, request_id, fingerprint)
             if prior:
-                if prior["fingerprint"] != fingerprint:
-                    raise DomainError("idempotency_conflict", "相同request_id已用于不同请求，请保留原请求或使用新的ID。", 409)
-                cached = json.loads(prior["result"])
-                if cached.get("error_code") == "question_revision_conflict":
-                    question = self.entity("questions", cached["question_id"], course)
-                    draft = self.one("SELECT * FROM conflicts WHERE id=?", (cached["conflict_id"],))
-                    raise DomainError("question_revision_conflict", "疑问版本冲突；此前提交草稿仍保留。", 409,
-                                      {"current_revision": question["revision"], "current_text": question["text"],
-                                       "incoming_text": draft["incoming_text"], "conflict_id": draft["id"]})
-                return {"result": dict(cached, replayed=True), "state": self.state(course)}
+                return prior
             try:
                 self.db.execute("BEGIN IMMEDIATE")
                 result = self.dispatch(path, payload, course)
@@ -245,12 +265,135 @@ class Repository:
                 raise
             return {"result": result, "state": self.state(course)}
 
+    def explain(self, question_id, payload, course, request_id, fingerprint):
+        from .model_gateway import ProviderError
+        key = (course, question_id)
+        with self.lock:
+            prior = self.replay(course, request_id, fingerprint)
+            if prior:
+                return prior
+            question = self.entity("questions", question_id, course)
+            provider = self.provider
+            info = self.provider_info()
+            if info.get("requires_consent") and (payload.get("allow_remote") is not True
+                    or payload.get("provider_fingerprint") != info["fingerprint"]):
+                raise DomainError("model_consent_required", "模型配置已变更或尚未确认发送。请同步后重新确认供应商、模型与资料发送范围。", 409)
+            if info["mode"] == "llm" and (type(payload.get("question_revision")) is not int
+                    or payload["question_revision"] != question["revision"]):
+                raise DomainError("generation_question_changed", "疑问已变化或缺少已确认的版本，请同步后重新确认本次问题。", 409)
+            if key in self.generating or len(self.generating) >= 2:
+                raise DomainError("generation_busy", "已有解释正在生成，请稍后同步查看结果。", 409)
+            sources = [s for s in self.sources(course) if not s["deleted"]]
+            snapshot = [(s["id"], s["revision"], s["sha256"]) for s in sources]
+            # Persist a reservation BEFORE sending anything: an ambiguous timeout,
+            # process crash or duplicate request must not automatically spend twice.
+            reserved = {"error_code": "generation_in_progress", "message": "此解释请求已发出或被中断，请先同步检查；如仍无结果，停止本地重试后重新确认生成。", "http_status": 409}
+            with self.db:
+                self.db.execute("INSERT INTO requests VALUES(?,?,?,?)", (course, request_id, fingerprint, encode(reserved)))
+            self.generating.add(key)
+        try:
+            # Network I/O holds neither the SQLite transaction nor the repository lock.
+            try:
+                proposal = provider.propose(question["text"], sources)
+            except ProviderError as exc:
+                raise DomainError(exc.code, exc.message, exc.status)
+            except Exception:
+                raise DomainError("provider_failed", "解释服务未完成；未保存生成内容。请核对模型配置后停止旧重试，再重新发起。", 502)
+            with self.lock:
+                try:
+                    self.db.execute("BEGIN IMMEDIATE")
+                    current = self.entity("questions", question_id, course)
+                    current_sources = [(s["id"], s["revision"], s["sha256"]) for s in self.sources(course) if not s["deleted"]]
+                    if (current["revision"] != question["revision"] or current["current_answer_id"] != question["current_answer_id"]
+                            or current_sources != snapshot or self.provider is not provider
+                            or self.provider_info()["fingerprint"] != info["fingerprint"]):
+                        raise DomainError("generation_context_changed", "生成期间疑问、资料或模型配置已变更；返回内容已丢弃，请同步后重新生成。", 409)
+                    result = self.store_proposal(question, proposal, provider.name, course, info["mode"] == "llm", sources)
+                    self.db.execute("UPDATE requests SET result=? WHERE course_id=? AND request_id=?", (encode(result), course, request_id))
+                    self.db.commit()
+                except Exception:
+                    self.db.rollback()
+                    raise
+                return {"result": result, "state": self.state(course)}
+        except Exception as exc:
+            error = exc if isinstance(exc, DomainError) else DomainError("invalid_provider_output", "模型输出不符合结构或引用要求，已拒绝保存。", 422)
+            # Store sanitized terminal errors; retries return them without model calls.
+            with self.lock, self.db:
+                self.db.execute("UPDATE requests SET result=? WHERE course_id=? AND request_id=?",
+                                (encode({"error_code": error.code, "message": error.message, "http_status": error.status}), course, request_id))
+            raise error
+        finally:
+            with self.lock:
+                self.generating.discard(key)
+
+    def store_proposal(self, question, proposal, provider_name, course, is_llm=False, sources=()):
+        if proposal.status not in ("ready", "needs_material", "conflict"):
+            raise DomainError("invalid_provider_output", "解释服务返回非法状态。", 422)
+        if (proposal.conflict != (proposal.status == "conflict")
+                or (proposal.status == "needs_material" and proposal.evidence)
+                or not isinstance(proposal.missing, list) or len(proposal.missing) > 10
+                or any(not isinstance(item, str) for item in proposal.missing)
+                or (proposal.status == "conflict" and len(proposal.evidence) < 2)):
+            raise DomainError("invalid_provider_output", "解释状态、缺项或冲突引用相互矛盾，已拒绝写入。", 422)
+        for item in proposal.missing:
+            require_text(item, "模型缺项说明", 2000)
+        proposed_claims = getattr(proposal, "claims", None)
+        pairs = [(c.text, c.evidence) for c in proposed_claims] if proposed_claims is not None else [(c.quote, [c]) for c in proposal.evidence]
+        if (len(pairs) > 12 or (proposal.status == "needs_material" and pairs)
+                or (proposal.status in ("ready", "conflict") and (not pairs or not proposal.evidence))):
+            raise DomainError("invalid_provider_output", "有结论时必须提供可校验引用。", 422)
+        if proposal.status == "conflict":
+            distinct = {(e.source_id, e.revision, e.page, e.start, e.end) for _, refs in pairs for e in refs}
+            if len(pairs) < 2 or len(distinct) < 2:
+                raise DomainError("invalid_provider_output", "冲突须并列至少两条说法及不同引用，已拒绝保存。", 422)
+        answer_id = uid()
+        self.db.execute("INSERT INTO answers VALUES(?,?,?,?,?)", (answer_id, question["id"], proposal.status, encode(proposal.missing), provider_name))
+        if is_llm:
+            self.db.executemany("INSERT INTO answer_context VALUES(?,?,?)", [(answer_id, s["id"], s["revision"]) for s in sources])
+        for text, evidence in pairs:
+            require_text(text, "模型结论", 3000)
+            if not isinstance(evidence, list) or not evidence or len(evidence) > 8:
+                raise DomainError("invalid_provider_output", "每条结论必须关联有效引用。", 422)
+            cid = uid()
+            self.db.execute("INSERT INTO claims VALUES(?,?,?,?)", (cid, answer_id, text, "conflict" if proposal.conflict else "unconfirmed"))
+            for candidate in evidence:
+                if candidate not in proposal.evidence:
+                    raise DomainError("invalid_provider_output", "结论引用不属于本次候选依据。", 422)
+                self.validate_evidence(candidate, course)
+                eid = uid()
+                self.db.execute("INSERT INTO evidence VALUES(?,?,?,?,?,?,?,?,?)", (eid, candidate.source_id, candidate.revision, candidate.page, candidate.start, candidate.end, candidate.quote, candidate.sha256, "current"))
+                self.db.execute("INSERT INTO claim_evidence VALUES(?,?)", (cid, eid))
+        self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=?", (question["id"],))
+        state = "needs_confirmation" if proposal.status == "ready" else "needs_material"
+        self.db.execute("UPDATE questions SET current_answer_id=?,state=? WHERE id=?", (answer_id, state, question["id"]))
+        result = {"answer_id": answer_id, "question_id": question["id"]}
+        if proposal.status == "ready":
+            prompt, rubric = ("请先独立回答：" + question["text"], [text for text, _ in pairs]) if is_llm else quiz(proposal.has_example)
+            card_id = uid()
+            self.db.execute("INSERT INTO cards VALUES(?,?,?,?,?,'awaiting_attempt',NULL)", (card_id, question["id"], answer_id, prompt, encode(rubric)))
+            result["card_id"] = card_id
+        return result
+
     def check_revision(self, entity, payload):
         if type(payload.get("base_revision")) is not int or payload["base_revision"] != entity["revision"]:
             raise DomainError("revision_conflict", "资料版本已变化，请刷新后比较，禁止静默覆盖。", 409,
                               {"current_revision": entity["revision"], "supplied_revision": payload.get("base_revision")})
 
     def invalidate(self, source_id, deleted=False):
+        # A model may base missing/conflict statements or paraphrases on context
+        # it did not cite. Conservatively invalidate all of that answer's context.
+        for row in self.rows("SELECT answer_id FROM answer_context WHERE source_id=?", (source_id,)):
+            aid = row["answer_id"]
+            self.db.execute("UPDATE answers SET status='needs_review' WHERE id=?", (aid,))
+            self.db.execute("UPDATE claims SET status='needs_review' WHERE answer_id=?", (aid,))
+            self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE answer_id=?", (aid,))
+            self.db.execute("UPDATE questions SET state='needs_review' WHERE current_answer_id=?", (aid,))
+            if deleted:
+                self.db.execute("UPDATE answers SET missing='[]' WHERE id=?", (aid,))
+                self.db.execute("UPDATE claims SET text='[依据已撤回]' WHERE answer_id=?", (aid,))
+                self.db.execute("UPDATE cards SET prompt='[依据已撤回，请重新生成自测]',rubric='[]' WHERE answer_id=?", (aid,))
+                self.db.execute("UPDATE attempts SET feedback=? WHERE card_id IN (SELECT id FROM cards WHERE answer_id=?)",
+                                (encode({"message": "依据已撤回，原反馈已清理；保留用户历史作答。", "reference_points": [], "automatic_grade": None}), aid))
         evidence_ids = [r["id"] for r in self.rows("SELECT id FROM evidence WHERE source_id=?", (source_id,))]
         for evidence_id in evidence_ids:
             self.db.execute("UPDATE evidence SET status='needs_review' WHERE id=?", (evidence_id,))
@@ -317,39 +460,6 @@ class Repository:
             self.db.execute("UPDATE questions SET text=?,revision=revision+1,state='recorded',current_answer_id=NULL WHERE id=?", (text, question["id"]))
             self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=?", (question["id"],))
             return {"question_id": question["id"], "revision": question["revision"] + 1}
-        if len(parts) == 3 and parts[0] == "questions" and parts[2] == "explain":
-            question = self.entity("questions", parts[1], course)
-            proposal = self.provider.propose(question["text"], [s for s in self.sources(course) if not s["deleted"]])
-            answer_id = uid()
-            if proposal.status not in ("ready", "needs_material", "conflict"):
-                raise DomainError("invalid_provider_output", "解释服务返回非法状态。", 422)
-            if (proposal.conflict != (proposal.status == "conflict")
-                    or (proposal.status == "needs_material" and proposal.evidence)
-                    or not isinstance(proposal.missing, list)
-                    or any(not isinstance(item, str) for item in proposal.missing)
-                    or (proposal.status == "conflict" and len(proposal.evidence) < 2)):
-                raise DomainError("invalid_provider_output", "解释状态、缺项或冲突引用相互矛盾，已拒绝写入。", 422)
-            if proposal.status in ("ready", "conflict") and not proposal.evidence:
-                raise DomainError("invalid_provider_output", "有结论时必须提供可校验引用。", 422)
-            self.db.execute("INSERT INTO answers VALUES(?,?,?,?,?)", (answer_id, question["id"], proposal.status, encode(proposal.missing), self.provider.name))
-            for candidate in proposal.evidence:
-                self.validate_evidence(candidate, course)
-                eid, cid = uid(), uid()
-                status = "conflict" if proposal.conflict else "unconfirmed"
-                self.db.execute("INSERT INTO evidence VALUES(?,?,?,?,?,?,?,?,?)", (eid, candidate.source_id, candidate.revision, candidate.page, candidate.start, candidate.end, candidate.quote, candidate.sha256, "current"))
-                self.db.execute("INSERT INTO claims VALUES(?,?,?,?)", (cid, answer_id, candidate.quote, status))
-                self.db.execute("INSERT INTO claim_evidence VALUES(?,?)", (cid, eid))
-            # Superseding an explanation never leaves an older card silently active.
-            self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=?", (question["id"],))
-            state = "needs_confirmation" if proposal.status == "ready" else "needs_material"
-            self.db.execute("UPDATE questions SET current_answer_id=?,state=? WHERE id=?", (answer_id, state, question["id"]))
-            result = {"answer_id": answer_id, "question_id": question["id"]}
-            if proposal.status == "ready":
-                prompt, rubric = quiz(proposal.has_example)
-                card_id = uid()
-                self.db.execute("INSERT INTO cards VALUES(?,?,?,?,?,'awaiting_attempt',NULL)", (card_id, question["id"], answer_id, prompt, encode(rubric)))
-                result["card_id"] = card_id
-            return result
         if len(parts) == 3 and parts[0] == "cards" and parts[2] in ("attempts", "confirm"):
             card = self.entity("cards", parts[1], course)
             if card["status"] == "needs_review":
