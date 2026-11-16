@@ -10,6 +10,12 @@
 
 ## 运行界面
 
+0.3 新增模型确认和引用展示，以下为 MuMu 实际运行截图。端点是本机模拟响应服务，标签明确标为“非真实模型”，没有调用外部供应商。
+
+<img src="docs/images/model-consent-portrait.png" width="270" alt="0.3竖屏单次请求确认"> <img src="docs/images/model-citation-portrait.png" width="270" alt="0.3本机模拟解释与引用">
+
+[横屏确认弹窗](docs/images/model-consent-wide.png) 也已检查。取消不会调用模拟服务，确认一次后生成一次，重新检索仍需重新确认；详细范围见 [验证记录](docs/VALIDATION.md)。
+
 以下为 0.2 界面的 MuMu Android 12 实际运行截图，使用合成教学材料；它们不作为 0.3 新增模型确认界面的验证证据。
 
 ![横屏疑问页](docs/images/questions-wide.png)
@@ -20,9 +26,9 @@
 
 ## 下载开发预览
 
-[v0.2.0-preview 发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.2.0-preview) 保留此前固定案例版 APK，**不含新增的 0.3 模型确认流程**。当前源码请按下文构建。APK 仍需电脑 Python 服务和 ADB 端口转发；仅安装 APK 不能获得完整在线功能。
+[v0.3.0-preview 发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.3.0-preview) 提供包含新增模型确认流程的调试 APK。模型配置与密钥仍由用户在电脑上提供，默认使用规则演示。APK 需要电脑 Python 服务和 ADB 端口转发；仅安装 APK 不能获得完整在线功能。旧版 0.2 保留用于历史对照。
 
-下载 `wenji-0.2.0-preview.apk` 后，可用 `adb -s <设备编号> install -r <APK路径>` 安装，再执行 `adb -s <设备编号> reverse tcp:8765 tcp:8765`。实体手机安装与软键盘体验仍待验证。发布页附 APK SHA256，源码构建方法如下。
+下载 `wenji-0.3.0-preview.apk` 后，可用 `adb -s <设备编号> install -r <APK路径>` 安装，再执行 `adb -s <设备编号> reverse tcp:8765 tcp:8765`。实体手机安装与软键盘体验仍待验证。发布页附 APK SHA256，源码构建方法如下。
 
 ## 当前功能与边界
 
