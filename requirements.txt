@@ -1,0 +1,2 @@
+# Tested locally with Python 3.12.14; server otherwise uses the standard library.
+pypdf==6.21.4

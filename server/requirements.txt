@@ -1,0 +1,2 @@
+# Only needed for copyable-text PDF import. Other server code uses stdlib.
+pypdf==6.21.4

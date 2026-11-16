@@ -1,0 +1,42 @@
+# Local data, runtime output and development environments
+.venv/
+venv/
+data/
+toolchain/
+reports/
+**/verification/
+__pycache__/
+*.py[cod]
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*
+*.log
+.env
+.env.*
+!.env.example
+
+# Android local SDK, generated files and signing material
+**/.gradle/
+**/build/
+**/local.properties
+.idea/
+*.iml
+*.apk
+*.aab
+*.jks
+*.keystore
+key.properties
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+*.swp
+
+# Contest documents and packaging are not source repository content
+output/
+sources/
+history/
+qa/
+*.zip

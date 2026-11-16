@@ -1,0 +1,247 @@
+{
+  "schema": 1,
+  "policy": "explicit source allowlist; refresh selected files; seed README and docs only when absent; never delete files or operate Git",
+  "excludes": [
+    "toolchains",
+    "databases",
+    "generated Android builds",
+    "local SDK settings",
+    "raw reports/screenshots/logs",
+    "private contest and identity documents",
+    "external delivery scripts"
+  ],
+  "source_file_count": 45,
+  "source_files": [
+    {
+      "path": "android/app/build.gradle.kts",
+      "bytes": 1290,
+      "sha256": "003f82b6207128b44498076287b9154004edb2e3cd36084251ea81d60700fefe"
+    },
+    {
+      "path": "android/app/schemas/org.wenji.study.LocalStore/1.json",
+      "bytes": 4094,
+      "sha256": "9e7f302c8cf8c54e6a4375b03dff43ddf9ab62fe1acd4e0f74c123ae21227c8f"
+    },
+    {
+      "path": "android/app/src/main/AndroidManifest.xml",
+      "bytes": 870,
+      "sha256": "dee09a5de6c313d4a01f236119c2be54a3306d28f72bdfe5fe3f8fa62543ccb5"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/EditorSession.kt",
+      "bytes": 1499,
+      "sha256": "4050fcde436cb59177aed06741b54cb67fc3634dafd1c9895bfc51e6e5f28333"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/LearningPages.kt",
+      "bytes": 14318,
+      "sha256": "d781abe30e50b1bd005fb16705bd2c1a5426dacdac252b05dcd5a993dca91244"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/LocalStore.kt",
+      "bytes": 2266,
+      "sha256": "83e26b7230a476363a8bc79804289ac939f4affd4fc5ed0fbab5bb7d8592eb25"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/MainActivity.kt",
+      "bytes": 12872,
+      "sha256": "1ab287e6b4e38f91de20bf458d4f49022ee9d98426ef6334b15b3d7415a05251"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/SourcePage.kt",
+      "bytes": 11709,
+      "sha256": "417750a8ca75d583ea27544d3e8f17dd85fad7af023b661ffeb0fd3af1a61b18"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/StorageChunks.kt",
+      "bytes": 543,
+      "sha256": "240a486311785e62d855cccebca22a3fe9a1691eb330afab2c6e10c56866de99"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/WenjiModel.kt",
+      "bytes": 8469,
+      "sha256": "c5080962527f049720d67d5613cdb3c7080ba4fb3e93dcf6f2e72eae577aaee0"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/WenjiUi.kt",
+      "bytes": 9887,
+      "sha256": "565c0a35dd731933972eb96b9671cc8ccde2185e4471c3f087dd909dfce19426"
+    },
+    {
+      "path": "android/app/src/main/res/drawable/ic_wenji.xml",
+      "bytes": 703,
+      "sha256": "39020df2069e67ab4f46541de36cd450b6776112348abcb961b45392f104a52c"
+    },
+    {
+      "path": "android/app/src/main/res/xml/backup_rules.xml",
+      "bytes": 487,
+      "sha256": "865cae97840e81b9950d70457a05c5c1125a68364b0a83f44cd3daa030bc7e96"
+    },
+    {
+      "path": "android/app/src/main/res/xml/data_extraction_rules.xml",
+      "bytes": 1050,
+      "sha256": "cb029b35db0e976c087100424e16e14a6256b46962398887520e51508c3b5842"
+    },
+    {
+      "path": "android/app/src/main/res/xml/network_security_config.xml",
+      "bytes": 267,
+      "sha256": "06762d851f711e66bd1650031be32c96db3ed4071c7b0fa238d824f2413b3516"
+    },
+    {
+      "path": "android/app/src/test/java/org/wenji/study/EditorSessionTest.kt",
+      "bytes": 1881,
+      "sha256": "006dc7db272304cfec9d390b5f87aed84264de6e87e1616bc50fa51a30fdf192"
+    },
+    {
+      "path": "android/app/src/test/java/org/wenji/study/StorageChunksTest.kt",
+      "bytes": 721,
+      "sha256": "fa500b3c31b48ee280a49f52afb0b9926949ec6e0ccad860e8c6a0cba09d6c0a"
+    },
+    {
+      "path": "android/build-local.ps1",
+      "bytes": 1294,
+      "sha256": "bb218a36a9cc4510325bf4f7b40a9a68da411baac4ca4b730e16891d91255c2c"
+    },
+    {
+      "path": "android/build.gradle.kts",
+      "bytes": 287,
+      "sha256": "1384a5c8f963fdabe04b3337d5f3e1a69265702d374d2558e485f86035ee1a4f"
+    },
+    {
+      "path": "android/gradle.properties",
+      "bytes": 103,
+      "sha256": "fa078c27c9e4bde28a029d673875b028884505efa436b68cf60e1ac0be5b679b"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.jar",
+      "bytes": 43583,
+      "sha256": "2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046"
+    },
+    {
+      "path": "android/gradle/wrapper/gradle-wrapper.properties",
+      "bytes": 341,
+      "sha256": "66243a08ddd59f6da973ed47f8c2d248e0e4505d723d2793e741a231acd83ad2"
+    },
+    {
+      "path": "android/gradlew",
+      "bytes": 8762,
+      "sha256": "a3648413b47ef77af21d5ebc36c687c7d103aaef3e17f33de7d4f080a6f300a3"
+    },
+    {
+      "path": "android/gradlew.bat",
+      "bytes": 2966,
+      "sha256": "57931b17dd228e5c24dac90e815d0bf82477e831a4618dfab4136f5446b42a9f"
+    },
+    {
+      "path": "android/install-debug.ps1",
+      "bytes": 1662,
+      "sha256": "1aaec06c23a694f53a27248f7f24bb936bb3dae067da6a50910c03e500b752aa"
+    },
+    {
+      "path": "android/settings.gradle.kts",
+      "bytes": 267,
+      "sha256": "94d09cdc33b382754905e19d1e2709b537bfc1570ef678d8c56877afae046b71"
+    },
+    {
+      "path": "fixtures/conflicting_material.txt",
+      "bytes": 164,
+      "sha256": "335bbb24772af0e587db1454295579817493d78a8d6cfe23852af21ba1a94110"
+    },
+    {
+      "path": "fixtures/insufficient_question.txt",
+      "bytes": 49,
+      "sha256": "98ea2706d7e7eb51744ce48aef59cf55b7f47bf00cb3e16dc6d69fef6568c3d5"
+    },
+    {
+      "path": "fixtures/resource_graph_v1.pdf",
+      "bytes": 21973,
+      "sha256": "b5cee34518338939ca062fb5b4855339b344602af515391b89dc0341054a2b6a"
+    },
+    {
+      "path": "fixtures/resource_graph_v1.txt",
+      "bytes": 490,
+      "sha256": "05e2c15825a530fea8a82db7930102eced08dc938190834821b188535896391a"
+    },
+    {
+      "path": "fixtures/resource_graph_v2.txt",
+      "bytes": 303,
+      "sha256": "5615adbfae0e569ea9a0ce0ff11ff6c6eb43f6e1366d7d7287defc700095aa2e"
+    },
+    {
+      "path": "requirements.txt",
+      "bytes": 96,
+      "sha256": "6b411490d7584f88628d61e4f9b985fc7a0d244020002ff0dc449563ae24fdc6"
+    },
+    {
+      "path": "scripts/connect_mumu.ps1",
+      "bytes": 1924,
+      "sha256": "52acfe1f09cb8ff8795fa39cdc69aebe2a23723b8296c02426c6d17980b92439"
+    },
+    {
+      "path": "scripts/http_smoke.py",
+      "bytes": 6034,
+      "sha256": "d1f7d6afca8dc221a1f4639364abeda007568661e4341380119476d08e460a27"
+    },
+    {
+      "path": "scripts/python_runtime.ps1",
+      "bytes": 595,
+      "sha256": "d9241d25784ad92a99ad4f8b3f5bd71369f99e26ca98fa7ca744342d5941f8fb"
+    },
+    {
+      "path": "scripts/run_service.ps1",
+      "bytes": 679,
+      "sha256": "fde3fc3f872675a44c06face50e2a5238fc9687aa08a642b2edbf9a081e8991e"
+    },
+    {
+      "path": "scripts/test.ps1",
+      "bytes": 774,
+      "sha256": "4a887a987fde677f1317f6b1ba550c89966ccc01f08218fab836842b801bcea4"
+    },
+    {
+      "path": "server/__init__.py",
+      "bytes": 75,
+      "sha256": "b75da205bfb67627b003ea522f790ac9220c744b04c27f2a2738d17221a5b6b5"
+    },
+    {
+      "path": "server/__main__.py",
+      "bytes": 4542,
+      "sha256": "8937d9d73f25fb8df7d0ea694e6c5086ffa75e5808504a65ebc458d4b8392c27"
+    },
+    {
+      "path": "server/core.py",
+      "bytes": 27448,
+      "sha256": "0137a2bb5dea4e77b29228d1a42dfdd6fb809c697e8763136cdf4fc24553758a"
+    },
+    {
+      "path": "server/provider.py",
+      "bytes": 4391,
+      "sha256": "23c24f56947122477b1dd48b24a42bd79e626c7d9cbee1771ca04d57e6837956"
+    },
+    {
+      "path": "server/requirements.txt",
+      "bytes": 89,
+      "sha256": "542c62819554f7f1b06da06a7a3b8505248b4cc61930c3d7d7c28c041c4d32a6"
+    },
+    {
+      "path": "tests/__init__.py",
+      "bytes": 61,
+      "sha256": "7da19aea36dac119bfd548bc84c690f52d36513f1c2d71d8cb9f002c6a243ec1"
+    },
+    {
+      "path": "tests/test_domain.py",
+      "bytes": 16095,
+      "sha256": "9fd768bed3bc48e9ec08c4bf92fbe1f8e830a1ddb2eba880f26791c176b30cb0"
+    },
+    {
+      "path": "tests/test_input_validation.py",
+      "bytes": 3909,
+      "sha256": "fd0eb6c3af4489f4a0e094db0b47e696600074f2301bba6416aa2f15aa4ec6bf"
+    }
+  ],
+  "seed_documents": [
+    "README.md",
+    ".gitignore",
+    "docs/AI_DEVELOPMENT.md"
+  ],
+  "verification_scope": "copy hashes only; functional and release validation are separate"
+}
