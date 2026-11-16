@@ -16,6 +16,12 @@
 
 界面变更见 [0.2 更新说明](docs/UI_CHANGES.md)，实际通过范围见 [验证记录](docs/VALIDATION.md)。
 
+## 下载开发预览
+
+[v0.2.0-preview 发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.2.0-preview) 提供已检查的调试 APK。它仍需要在电脑启动下述 Python 服务并建立 ADB 端口转发；仅安装 APK 不能获得完整在线功能。
+
+下载 `wenji-0.2.0-preview.apk` 后，可用 `adb -s <设备编号> install -r <APK路径>` 安装，再执行 `adb -s <设备编号> reverse tcp:8765 tcp:8765`。实体手机安装与软键盘体验仍待验证。发布页附 APK SHA256，源码构建方法如下。
+
 ## 当前功能与边界
 
 - Kotlin / Jetpack Compose Android 客户端，Room 保存疑问、待同步请求和最近缓存；离线可记录疑问、查看已缓存内容。
