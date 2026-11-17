@@ -1,18 +1,12 @@
 package org.wenji.study
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -22,103 +16,42 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.window.SecureFlagPolicy
 
-@Composable
-internal fun ModelSettingsDialog(
-    initial: ModelSettingsForm,
-    saving: Boolean = false,
-    error: String? = null,
-    onSave: (ModelSettingsForm) -> Unit,
-    onUseDemo: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var protocol by rememberSaveable { mutableStateOf(initial.protocol) }
-    var baseUrl by rememberSaveable { mutableStateOf(initial.baseUrl) }
-    var model by rememberSaveable { mutableStateOf(initial.model) }
-    // Never use rememberSaveable or prefill the saved key. Closing/rotating discards an unsaved key.
-    var apiKey by remember { mutableStateOf("") }
-    var maxTokens by rememberSaveable { mutableStateOf(initial.maxOutputTokens.toString()) }
-    var choosingProtocol by remember { mutableStateOf(false) }
-    var validationError by remember { mutableStateOf<String?>(null) }
-    AlertDialog(
-        onDismissRequest = { if (!saving) onDismiss() },
-        properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-        title = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("手机模型设置", style = MaterialTheme.typography.titleLarge)
-                // Keep safe validation feedback visible even when the form is scrolled or the IME is open.
-                (validationError ?: error)?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, color = WenjiColors.Red, style = MaterialTheme.typography.bodySmall)
+@Composable internal fun ModelCapabilityInfo(modelName:String) {
+    val capability = remember(modelName) { modelCapabilities(modelName) }
+    val uriHandler = LocalUriHandler.current
+    var sourceError by remember(modelName) { mutableStateOf(false) }
+    var showDetails by rememberSaveable(modelName) { mutableStateOf(false) }
+    Surface(color=WenjiColors.Field,shape=RoundedCornerShape(12.dp),modifier=Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
+            Text(when(capability?.matchKind) {
+                ModelCapabilityMatchKind.VERSION_CANDIDATE -> "官方版本候选参考"
+                ModelCapabilityMatchKind.ALIAS_CANDIDATE -> "第三方别名推荐参考"
+                else -> "型号能力参考"
+            },style=MaterialTheme.typography.titleSmall)
+            if(capability==null) {
+                Text(if(modelName.isBlank()) "填写模型名后显示能力参考。"
+                    else "暂无可靠匹配，参数请以服务商说明为准。",
+                    style=MaterialTheme.typography.bodyMedium,color=WenjiColors.Muted)
+                Text("问迹当前仅发送文本。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            } else {
+                val numbers=remember { java.text.NumberFormat.getIntegerInstance(java.util.Locale.CHINA) }
+                Text("官方型号：${capability.modelId}",style=MaterialTheme.typography.bodyMedium)
+                Text("${capability.contextLabel}：${numbers.format(capability.contextTokens)} tokens\n最大输出：${numbers.format(capability.maxOutputTokens)} tokens",style=MaterialTheme.typography.bodyMedium)
+                Text("图像输入：${if(capability.imageInput) "支持" else "不支持"} · 问迹仅发送文本",style=MaterialTheme.typography.bodyMedium,color=WenjiColors.Muted)
+                Text("官方参数参考，实际部署待核对。",style=MaterialTheme.typography.bodyMedium,color=WenjiColors.Amber)
+                TextButton(onClick={showDetails=!showDetails},contentPadding=androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text(if(showDetails) "收起匹配依据" else "查看匹配依据") }
+                if(showDetails) {
+                    if(capability.matchKind==ModelCapabilityMatchKind.ALIAS_CANDIDATE) Text("按名称推荐最接近的已收录官方型号参数，并非当前服务端实测。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Amber)
+                    if(capability.notes.isNotBlank()) Text(capability.notes,style=MaterialTheme.typography.bodySmall,color=WenjiColors.Amber)
+                    Text("${capability.provider} 官方型号资料 · 核验于 ${capability.verifiedDate}。这是按名称匹配的参考，未探测当前 API；第三方同名映射和账号限额可能不同。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+                    Text("不发送图像、音频或视频，不自动修改已填写的输出 Token。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+                    TextButton(onClick={sourceError=runCatching { uriHandler.openUri(capability.sourceUrl) }.isFailure},contentPadding=androidx.compose.foundation.layout.PaddingValues(0.dp)) { Text("查看官方型号资料") }
+                    if(sourceError) Text("未能打开浏览器，可稍后查看服务商文档。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Red)
                 }
             }
-        },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text("学习资料和记录保存在手机。需要 AI 时，手机直接联网调用你配置的模型服务。",
-                    style = MaterialTheme.typography.bodyMedium)
-                Text("每次调用前单独确认，只发送本次问题及检索出的资料片段（含来源定位）。配置完成不代表调用已验证。",
-                    style = MaterialTheme.typography.bodySmall, color = WenjiColors.Muted)
-                Box {
-                    OutlinedButton(onClick = { choosingProtocol = true }, enabled = !saving, modifier = Modifier.fillMaxWidth()) {
-                        Text(modelProtocols[protocol] ?: "选择协议")
-                    }
-                    DropdownMenu(expanded = choosingProtocol, onDismissRequest = { choosingProtocol = false }) {
-                        modelProtocols.forEach { (value, label) ->
-                            DropdownMenuItem(text = { Text(label) }, onClick = { protocol = value; choosingProtocol = false })
-                        }
-                    }
-                }
-                OutlinedTextField(
-                    value = baseUrl, onValueChange = { baseUrl = it }, enabled = !saving,
-                    label = { Text("API 基址") }, placeholder = { Text("https://api.example.com/v1") },
-                    supportingText = { Text("填写服务方提供的 API 基址；更换地址需重新输入密钥。") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false, imeAction = ImeAction.Next),
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = model, onValueChange = { model = it }, enabled = !saving,
-                    label = { Text("模型名称") },
-                    keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Next),
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = apiKey, onValueChange = { apiKey = it }, enabled = !saving,
-                    label = { Text("个人 API Key") },
-                    placeholder = { Text(if (initial.hasSavedKey) "已保存密钥，留空保留" else "请输入你的个人密钥") },
-                    supportingText = { Text("密钥由 Android Keystore 加密保存在本机，不包含在安装包中。") },
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false, imeAction = ImeAction.Next),
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = maxTokens, onValueChange = { maxTokens = it.filter(Char::isDigit).take(5) }, enabled = !saving,
-                    label = { Text("最大输出 Token") }, supportingText = { Text("1–16384；默认 2048。请求超时为 60 秒。") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
-                    singleLine = true, modifier = Modifier.fillMaxWidth(),
-                )
-                TextButton(onClick = onUseDemo, enabled = !saving) { Text("清除密钥并使用规则演示") }
-                Text("规则演示无需密钥或网络，仅用于固定案例；已有学习资料和记录会保留。",
-                    style = MaterialTheme.typography.bodySmall, color = WenjiColors.Muted)
-            }
-        },
-        confirmButton = {
-            TextButton(enabled = !saving, onClick = {
-                val form = ModelSettingsForm(protocol, baseUrl, model, apiKey, maxTokens.toIntOrNull() ?: 0, initial.hasSavedKey)
-                try {
-                    validateModelSettings(form)
-                    if (apiKey.isBlank() && !initial.hasSavedKey) validateModelKey(apiKey)
-                    if (apiKey.isEmpty() && initial.hasSavedKey) validateSavedKeyDestination(baseUrl, initial.baseUrl)
-                    validationError = null
-                    onSave(form)
-                } catch (failure: ModelSettingsException) { validationError = failure.message }
-            }) { Text(if (saving) "正在保存…" else "保存设置") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss, enabled = !saving) { Text("取消") } },
-    )
+        }
+    }
 }

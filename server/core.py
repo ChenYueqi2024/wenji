@@ -94,6 +94,8 @@ CREATE TABLE IF NOT EXISTS sources(id TEXT PRIMARY KEY, course_id TEXT NOT NULL,
 CREATE TABLE IF NOT EXISTS revisions(source_id TEXT NOT NULL REFERENCES sources(id), revision INTEGER NOT NULL, pages TEXT NOT NULL, sha256 TEXT NOT NULL, deleted INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(source_id,revision));
 CREATE TABLE IF NOT EXISTS questions(id TEXT PRIMARY KEY, course_id TEXT NOT NULL, text TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 1, state TEXT NOT NULL, current_answer_id TEXT);
 CREATE TABLE IF NOT EXISTS answers(id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES questions(id), status TEXT NOT NULL, missing TEXT NOT NULL, provider TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS answer_provenance(answer_id TEXT PRIMARY KEY REFERENCES answers(id), remote_called INTEGER NOT NULL CHECK(remote_called IN (0,1)));
+CREATE TABLE IF NOT EXISTS general_references(id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES questions(id), question_revision INTEGER NOT NULL, text TEXT NOT NULL, provider TEXT NOT NULL, created_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS answer_context(answer_id TEXT NOT NULL REFERENCES answers(id), source_id TEXT NOT NULL REFERENCES sources(id), revision INTEGER NOT NULL, PRIMARY KEY(answer_id,source_id));
 CREATE TABLE IF NOT EXISTS evidence(id TEXT PRIMARY KEY, source_id TEXT NOT NULL, revision INTEGER NOT NULL, page INTEGER NOT NULL, start INTEGER NOT NULL, end INTEGER NOT NULL, quote TEXT NOT NULL, sha256 TEXT NOT NULL, status TEXT NOT NULL, FOREIGN KEY(source_id,revision) REFERENCES revisions(source_id,revision));
 CREATE TABLE IF NOT EXISTS claims(id TEXT PRIMARY KEY, answer_id TEXT NOT NULL REFERENCES answers(id), text TEXT NOT NULL, status TEXT NOT NULL);
@@ -101,6 +103,7 @@ CREATE TABLE IF NOT EXISTS claim_evidence(claim_id TEXT NOT NULL REFERENCES clai
 CREATE INDEX IF NOT EXISTS evidence_source ON evidence(source_id);
 CREATE INDEX IF NOT EXISTS dependency_evidence ON claim_evidence(evidence_id);
 CREATE TABLE IF NOT EXISTS cards(id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES questions(id), answer_id TEXT NOT NULL REFERENCES answers(id), prompt TEXT NOT NULL, rubric TEXT NOT NULL, status TEXT NOT NULL, due_at TEXT);
+CREATE TABLE IF NOT EXISTS general_reference_cards(reference_id TEXT PRIMARY KEY REFERENCES general_references(id), card_id TEXT UNIQUE NOT NULL REFERENCES cards(id), superseded_by_answer_id TEXT REFERENCES answers(id));
 CREATE TABLE IF NOT EXISTS attempts(id TEXT PRIMARY KEY, card_id TEXT NOT NULL REFERENCES cards(id), answer TEXT NOT NULL, feedback TEXT NOT NULL, created_at TEXT NOT NULL, confirmed INTEGER NOT NULL DEFAULT 0, self_rating TEXT);
 CREATE TABLE IF NOT EXISTS requests(course_id TEXT NOT NULL, request_id TEXT NOT NULL, fingerprint TEXT NOT NULL, result TEXT NOT NULL, PRIMARY KEY(course_id,request_id));
 CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, event TEXT NOT NULL, entity_id TEXT NOT NULL, created_at TEXT NOT NULL);
@@ -119,6 +122,17 @@ class Repository:
         self.lock = threading.RLock()
         self.provider = provider or ExtractiveDemoProvider()
         self.generating = set()
+        # Existing 0.4.2 references were saved before uncited review cards were
+        # requested. Backfill from local text only, atomically and idempotently.
+        try:
+            with self.db:
+                self.db.execute("BEGIN IMMEDIATE")
+                for reference in self.rows("SELECT r.* FROM general_references r LEFT JOIN general_reference_cards g ON g.reference_id=r.id WHERE g.reference_id IS NULL ORDER BY r.rowid"):
+                    question = self.one("SELECT * FROM questions WHERE id=?", (reference["question_id"],))
+                    self.ensure_reference_card(reference, question)
+        except Exception:
+            self.db.close()
+            raise
 
     def close(self):
         self.db.close()
@@ -148,11 +162,27 @@ class Repository:
             source["pages"] = json.loads(source["pages"])
         return sources
 
+    def card_basis(self, card_id, status=None):
+        link = self.one("SELECT * FROM general_reference_cards WHERE card_id=?", (card_id,))
+        if not link:
+            return {"basis": "course_evidence", "reference_id": None, "superseded_by_answer_id": None,
+                    "basis_notice": "依据课程资料生成；仍需核对引用与适用条件。"}
+        notice = "通用参考复习 · 尚无课程依据，模型内容可能有误；自评不代表已掌握课程知识。"
+        if link["superseded_by_answer_id"]:
+            notice += " 已生成资料版，此卡保留为历史，不再安排复习。"
+        elif status == "needs_review":
+            notice += " 问题或参考已更新，此卡已暂停。"
+        return {"basis": "general_reference", "reference_id": link["reference_id"],
+                "superseded_by_answer_id": link["superseded_by_answer_id"], "basis_notice": notice}
+
     def answer(self, answer_id):
         answer = self.one("SELECT * FROM answers WHERE id=?", (answer_id,))
         if not answer:
             return None
         answer["missing_information"] = json.loads(answer.pop("missing"))
+        provenance = self.one("SELECT remote_called FROM answer_provenance WHERE answer_id=?", (answer_id,))
+        answer["remote_called"] = (bool(provenance["remote_called"]) if provenance else
+                                   False if answer["provider"] == "deterministic-extractive-v1" else None)
         answer["claims"] = self.rows("SELECT * FROM claims WHERE answer_id=? ORDER BY rowid", (answer_id,))
         for claim in answer["claims"]:
             claim["evidence"] = self.rows("SELECT e.*,s.title AS source_title FROM evidence e JOIN claim_evidence ce ON ce.evidence_id=e.id JOIN sources s ON s.id=e.source_id WHERE ce.claim_id=? ORDER BY e.rowid", (claim["id"],))
@@ -195,13 +225,29 @@ class Repository:
             questions = self.rows("SELECT * FROM questions WHERE course_id=? ORDER BY rowid", (course,))
             for question in questions:
                 question["answer"] = self.answer(question["current_answer_id"])
+                reference = self.one("SELECT * FROM general_references WHERE question_id=? ORDER BY rowid DESC LIMIT 1", (question["id"],))
+                if reference:
+                    link = self.one("SELECT * FROM general_reference_cards WHERE reference_id=?", (reference["id"],))
+                    reference.update(kind="general_knowledge",
+                                     status=("needs_review" if reference["question_revision"] != question["revision"] else
+                                             "superseded" if link and link["superseded_by_answer_id"] else "unverified"),
+                                     card_id=link["card_id"] if link else None,
+                                     superseded_by_answer_id=link["superseded_by_answer_id"] if link else None,
+                                     notice="通用知识参考 · 无课程原文依据，可能有误，请核对")
+                question["reference"] = reference
                 question["conflict_drafts"] = self.rows("SELECT * FROM conflicts WHERE question_id=? ORDER BY rowid", (question["id"],))
             cards = self.rows("SELECT c.id,c.question_id,c.answer_id,c.prompt,c.status,c.due_at FROM cards c JOIN questions q ON q.id=c.question_id WHERE q.course_id=? ORDER BY c.rowid", (course,))
+            for card in cards:
+                card.update(self.card_basis(card["id"], card["status"]))
             attempts = self.rows("SELECT a.*,c.status AS card_status FROM attempts a JOIN cards c ON c.id=a.card_id JOIN questions q ON q.id=c.question_id WHERE q.course_id=? ORDER BY a.rowid", (course,))
             for attempt in attempts:
                 attempt["feedback"] = json.loads(attempt["feedback"])
                 attempt["confirmed"] = bool(attempt["confirmed"])
-                attempt["source_warning"] = "依据已变更或撤回，请重新核对；历史作答仅供查看。" if attempt.pop("card_status") == "needs_review" else None
+                status = attempt.pop("card_status")
+                basis = self.card_basis(attempt["card_id"], status)
+                attempt.update(basis)
+                attempt["source_warning"] = (basis["basis_notice"] if basis["basis"] == "general_reference" else
+                                             "依据已变更或撤回，请重新核对；历史作答仅供查看。" if status == "needs_review" else None)
             info = self.provider_info()
             return {"mode": "local-llm" if info["mode"] == "llm" else "local-demo", "provider": self.provider.name, "provider_info": info, "course_id": course,
                     "limitations": ["仅单机开发预览，无账号认证或跨设备同步。", "模型解释及引用语义仍需人工核对；结构校验不证明内容正确。" if info["mode"] == "llm" else "固定案例摘录与冲突规则，未调用大模型。", "删除不覆盖已发送给供应商的内容、客户端旧缓存或操作系统备份。"],
@@ -240,8 +286,8 @@ class Repository:
         except UnicodeEncodeError:
             raise DomainError("invalid_input", "请求含不完整的Unicode字符，请重新输入。")
         parts = [p for p in path.split("/") if p]
-        if len(parts) == 3 and parts[0] == "questions" and parts[2] == "explain":
-            return self.explain(parts[1], payload, course, request_id, fingerprint)
+        if len(parts) == 3 and parts[0] == "questions" and parts[2] in ("explain", "reference"):
+            return self.explain(parts[1], payload, course, request_id, fingerprint, general=parts[2] == "reference")
         with self.lock:
             prior = self.replay(course, request_id, fingerprint)
             if prior:
@@ -265,7 +311,7 @@ class Repository:
                 raise
             return {"result": result, "state": self.state(course)}
 
-    def explain(self, question_id, payload, course, request_id, fingerprint):
+    def explain(self, question_id, payload, course, request_id, fingerprint, *, general=False):
         from .model_gateway import ProviderError
         key = (course, question_id)
         with self.lock:
@@ -275,6 +321,11 @@ class Repository:
             question = self.entity("questions", question_id, course)
             provider = self.provider
             info = self.provider_info()
+            if general:
+                if info.get("mode") != "llm" or not callable(getattr(provider, "general_reference", None)):
+                    raise DomainError("general_reference_unavailable", "通用知识参考需要先配置模型 API；规则演示不支持此功能。", 400)
+                if payload.get("purpose") != "general_reference":
+                    raise DomainError("general_reference_consent_required", "请单独确认生成无课程原文依据的通用知识参考。", 409)
             if info.get("requires_consent") and (payload.get("allow_remote") is not True
                     or payload.get("provider_fingerprint") != info["fingerprint"]):
                 raise DomainError("model_consent_required", "模型配置已变更或尚未确认发送。请同步后重新确认供应商、模型与资料发送范围。", 409)
@@ -283,8 +334,11 @@ class Repository:
                 raise DomainError("generation_question_changed", "疑问已变化或缺少已确认的版本，请同步后重新确认本次问题。", 409)
             if key in self.generating or len(self.generating) >= 2:
                 raise DomainError("generation_busy", "已有解释正在生成，请稍后同步查看结果。", 409)
-            sources = [s for s in self.sources(course) if not s["deleted"]]
+            # General references never receive imported material, even when it
+            # exists; course-backed generation retains its original snapshot.
+            sources = [] if general else [s for s in self.sources(course) if not s["deleted"]]
             snapshot = [(s["id"], s["revision"], s["sha256"]) for s in sources]
+            previous_reference = self.one("SELECT id FROM general_references WHERE question_id=? ORDER BY rowid DESC LIMIT 1", (question_id,)) if general else None
             # Persist a reservation BEFORE sending anything: an ambiguous timeout,
             # process crash or duplicate request must not automatically spend twice.
             reserved = {"error_code": "generation_in_progress", "message": "此解释请求已发出或被中断，请先同步检查；如仍无结果，停止本地重试后重新确认生成。", "http_status": 409}
@@ -294,7 +348,7 @@ class Repository:
         try:
             # Network I/O holds neither the SQLite transaction nor the repository lock.
             try:
-                proposal = provider.propose(question["text"], sources)
+                proposal = provider.general_reference(question["text"]) if general else provider.propose(question["text"], sources)
             except ProviderError as exc:
                 raise DomainError(exc.code, exc.message, exc.status)
             except Exception:
@@ -303,12 +357,15 @@ class Repository:
                 try:
                     self.db.execute("BEGIN IMMEDIATE")
                     current = self.entity("questions", question_id, course)
-                    current_sources = [(s["id"], s["revision"], s["sha256"]) for s in self.sources(course) if not s["deleted"]]
+                    current_sources = [] if general else [(s["id"], s["revision"], s["sha256"]) for s in self.sources(course) if not s["deleted"]]
+                    current_reference = self.one("SELECT id FROM general_references WHERE question_id=? ORDER BY rowid DESC LIMIT 1", (question_id,)) if general else None
                     if (current["revision"] != question["revision"] or current["current_answer_id"] != question["current_answer_id"]
+                            or current_reference != previous_reference
                             or current_sources != snapshot or self.provider is not provider
                             or self.provider_info()["fingerprint"] != info["fingerprint"]):
                         raise DomainError("generation_context_changed", "生成期间疑问、资料或模型配置已变更；返回内容已丢弃，请同步后重新生成。", 409)
-                    result = self.store_proposal(question, proposal, provider.name, course, info["mode"] == "llm", sources)
+                    result = (self.store_reference(question, proposal, provider.name) if general else
+                              self.store_proposal(question, proposal, provider.name, course, info["mode"] == "llm", sources))
                     self.db.execute("UPDATE requests SET result=? WHERE course_id=? AND request_id=?", (encode(result), course, request_id))
                     self.db.commit()
                 except Exception:
@@ -325,6 +382,39 @@ class Repository:
         finally:
             with self.lock:
                 self.generating.discard(key)
+
+    def store_reference(self, question, text, provider_name):
+        # Reference review is separately labelled and never promoted into a
+        # cited claim or the question's course-backed current_answer_id.
+        text = require_text(text, "通用知识参考", 12000)
+        identity = uid()
+        self.db.execute("INSERT INTO general_references VALUES(?,?,?,?,?,?)",
+                        (identity, question["id"], question["revision"], text, provider_name, timestamp()))
+        self.audit("general_reference_generated", identity)
+        self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=? AND id IN (SELECT card_id FROM general_reference_cards)", (question["id"],))
+        reference = self.one("SELECT * FROM general_references WHERE id=?", (identity,))
+        card_id = self.ensure_reference_card(reference, question)
+        return {"reference_id": identity, "card_id": card_id, "question_id": question["id"], "kind": "general_knowledge"}
+
+    def ensure_reference_card(self, reference, question):
+        existing = self.one("SELECT card_id FROM general_reference_cards WHERE reference_id=?", (reference["id"],))
+        if existing:
+            return existing["card_id"]
+        text = require_text(reference["text"], "通用知识参考", 12000)
+        latest = self.one("SELECT id FROM general_references WHERE question_id=? ORDER BY rowid DESC LIMIT 1", (question["id"],))
+        current = self.one("SELECT id,status FROM answers WHERE id=?", (question["current_answer_id"],))
+        superseded = current["id"] if current and current["status"] == "ready" else None
+        stale = (reference["question_revision"] != question["revision"] or latest["id"] != reference["id"] or superseded)
+        answer_id, card_id = uid(), uid()
+        self.db.execute("INSERT INTO answers VALUES(?,?,?,'[]',?)", (answer_id, question["id"], "general_reference", reference["provider"]))
+        # These private internal answer rows have no claims, evidence or source
+        # context. Their sole purpose is compatibility with the cards FK.
+        prompt = ("请先独立回答：" + question["text"] if reference["question_revision"] == question["revision"] else
+                  "旧问题的通用参考复习（问题已修改，仅供历史查看）")
+        self.db.execute("INSERT INTO cards VALUES(?,?,?,?,?,?,NULL)",
+                        (card_id, question["id"], answer_id, prompt, encode([text]), "needs_review" if stale else "awaiting_attempt"))
+        self.db.execute("INSERT INTO general_reference_cards VALUES(?,?,?)", (reference["id"], card_id, superseded))
+        return card_id
 
     def store_proposal(self, question, proposal, provider_name, course, is_llm=False, sources=()):
         if proposal.status not in ("ready", "needs_material", "conflict"):
@@ -348,6 +438,9 @@ class Repository:
                 raise DomainError("invalid_provider_output", "冲突须并列至少两条说法及不同引用，已拒绝保存。", 422)
         answer_id = uid()
         self.db.execute("INSERT INTO answers VALUES(?,?,?,?,?)", (answer_id, question["id"], proposal.status, encode(proposal.missing), provider_name))
+        remote_called = getattr(proposal, "remote_called", None) if is_llm else False
+        if type(remote_called) is bool:
+            self.db.execute("INSERT INTO answer_provenance VALUES(?,?)", (answer_id, int(remote_called)))
         if is_llm:
             self.db.executemany("INSERT INTO answer_context VALUES(?,?,?)", [(answer_id, s["id"], s["revision"]) for s in sources])
         for text, evidence in pairs:
@@ -363,11 +456,15 @@ class Repository:
                 eid = uid()
                 self.db.execute("INSERT INTO evidence VALUES(?,?,?,?,?,?,?,?,?)", (eid, candidate.source_id, candidate.revision, candidate.page, candidate.start, candidate.end, candidate.quote, candidate.sha256, "current"))
                 self.db.execute("INSERT INTO claim_evidence VALUES(?,?)", (cid, eid))
-        self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=?", (question["id"],))
+        # A failed/insufficient course answer must not erase an uncited review
+        # flow. Only a ready course answer supersedes general references.
+        self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=? AND id NOT IN (SELECT card_id FROM general_reference_cards)", (question["id"],))
         state = "needs_confirmation" if proposal.status == "ready" else "needs_material"
         self.db.execute("UPDATE questions SET current_answer_id=?,state=? WHERE id=?", (answer_id, state, question["id"]))
         result = {"answer_id": answer_id, "question_id": question["id"]}
         if proposal.status == "ready":
+            self.db.execute("UPDATE cards SET status='needs_review',due_at=NULL WHERE question_id=? AND id IN (SELECT card_id FROM general_reference_cards)", (question["id"],))
+            self.db.execute("UPDATE general_reference_cards SET superseded_by_answer_id=? WHERE card_id IN (SELECT id FROM cards WHERE question_id=?) AND superseded_by_answer_id IS NULL", (answer_id, question["id"]))
             prompt, rubric = ("请先独立回答：" + question["text"], [text for text, _ in pairs]) if is_llm else quiz(proposal.has_example)
             card_id = uid()
             self.db.execute("INSERT INTO cards VALUES(?,?,?,?,?,'awaiting_attempt',NULL)", (card_id, question["id"], answer_id, prompt, encode(rubric)))
@@ -462,12 +559,17 @@ class Repository:
             return {"question_id": question["id"], "revision": question["revision"] + 1}
         if len(parts) == 3 and parts[0] == "cards" and parts[2] in ("attempts", "confirm"):
             card = self.entity("cards", parts[1], course)
+            basis = self.card_basis(card["id"], card["status"])
             if card["status"] == "needs_review":
-                raise DomainError("source_needs_review", "来源或疑问已变更，旧卡已暂停。请重新找依据并生成自测。", 409)
+                raise DomainError("source_needs_review", "问题、参考或依据已更新，旧卡已暂停。请使用当前复习卡；历史作答仍保留。", 409)
             if parts[2] == "attempts":
                 answer = require_text(payload.get("answer"), "独立作答", 10000)
                 aid = uid()
                 response = feedback(answer, json.loads(card["rubric"]))
+                response["basis"] = basis["basis"]
+                if basis["basis"] == "general_reference":
+                    response.update(mode="general-reference-comparison",
+                                    message="已保存独立作答。以下为模型通用参考全文，尚无课程依据，可能有误；请自行对照，未自动评分或认定课程知识已掌握。")
                 self.db.execute("INSERT INTO attempts VALUES(?,?,?,?,?,0,NULL)", (aid, card["id"], answer, encode(response), timestamp()))
                 self.db.execute("UPDATE cards SET status='awaiting_confirmation',due_at=NULL WHERE id=?", (card["id"],))
                 return {"attempt_id": aid, "card_id": card["id"]}
@@ -484,7 +586,8 @@ class Repository:
             due = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
             self.db.execute("UPDATE attempts SET confirmed=1,self_rating=? WHERE id=?", (rating, attempt["id"]))
             self.db.execute("UPDATE cards SET status='reviewing',due_at=? WHERE id=?", (due, card["id"]))
-            self.db.execute("UPDATE questions SET state='reviewing' WHERE id=?", (card["question_id"],))
+            if basis["basis"] != "general_reference":
+                self.db.execute("UPDATE questions SET state='reviewing' WHERE id=?", (card["question_id"],))
             return {"card_id": card["id"], "attempt_id": attempt["id"], "due_at": due}
         raise DomainError("not_found", "接口不存在。", 404)
 

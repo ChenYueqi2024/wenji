@@ -9,6 +9,7 @@ import org.junit.Test
 class SyncRefreshTest {
     @Test fun explanationIsNeverAutomaticallySentDuringRefreshOrRestart() {
         assertFalse(mayAutoRetry("/questions/question-1/explain"))
+        assertFalse(mayAutoRetry("/questions/question-1/reference"))
         assertTrue(mayAutoRetry("/sources"))
         assertTrue(mayAutoRetry("/cards/card-1/attempts"))
     }

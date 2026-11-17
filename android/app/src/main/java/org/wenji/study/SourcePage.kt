@@ -59,21 +59,24 @@ import org.json.JSONObject
     PageHeading("课程资料","让每一次解释，都能回到原始依据。",model,wide)
     if (model.state.objects("sources").none { !it.optBoolean("deleted") }) {
         WhiteCard {
-            Text("先用一份合成教材体验",style=MaterialTheme.typography.titleMedium)
-            Text("内置两页资源分配图材料，供演示引用、反例和复习。手机离线即可导入，不是真实课堂采样。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
-            PrimaryAction("导入内置合成教材",model::importDemoMaterial,model.canWrite(),Glyph.Book)
+            Text("没有资料？先试内置教材",style=MaterialTheme.typography.titleMedium)
+            Text("两页死锁案例，离线即可体验引用和复习。",style=MaterialTheme.typography.bodyMedium)
+            Text("合成教学材料，非真实课堂采样。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            PrimaryAction("导入内置教材",model::importDemoMaterial,model.canWrite(),Glyph.Book)
         }
     }
     WhiteCard {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
             Surface(color=WenjiColors.TealSoft,shape=RoundedCornerShape(16.dp),modifier=Modifier.size(56.dp)) { Box(contentAlignment=Alignment.Center){LineIcon(Glyph.File,Modifier.size(27.dp),WenjiColors.Teal)} }
-            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) { Text("把课堂资料放进来",style=MaterialTheme.typography.titleMedium);Text("可复制文本的 PDF / UTF-8 文本",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall) }
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) { Text("导入课后资料",style=MaterialTheme.typography.titleMedium);Text("PDF（可复制文字）或 TXT",color=WenjiColors.Muted,style=MaterialTheme.typography.bodyMedium) }
         }
-        Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
-            PrimaryAction(if(reading) "读取文件中…" else "选择文件",{picker.launch(arrayOf("application/pdf","text/plain"))},model.canWrite()&&!reading,Glyph.Plus)
-            TextButton(onClick={pasteOpen=!pasteOpen},enabled=!reading) { Text(if(pasteOpen) "收起" else "粘贴文本 / 命名",style=MaterialTheme.typography.bodySmall) }
+        AdaptiveActions { actionModifier ->
+            PrimaryAction(if(reading) "读取文件中…" else "选择文件",{picker.launch(arrayOf("application/pdf","text/plain"))},model.canWrite()&&!reading,Glyph.Plus,modifier=actionModifier)
+            TextButton(onClick={pasteOpen=!pasteOpen},enabled=!reading,modifier=actionModifier) { Text(if(pasteOpen) "收起" else "粘贴文字") }
         }
-        Text("仅导入有权使用的资料 · 文件 ≤ 5 MB · 扫描件暂不支持",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
+        Text("导入后回到“疑问”，生成带引用的课程资料版答案。",style=MaterialTheme.typography.bodyMedium)
+        Text("资料只保存在手机；调用模型前再确认发送。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
+        Text("文件不超过 5 MB；TXT 使用 UTF-8 编码。扫描件暂不支持，请使用有权使用的资料。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
         if(pasteOpen) {
             HorizontalDivider()
             InputField(title,{title=it.take(200)},"资料名称（选填，默认使用文件名）",maxLines=1)
@@ -92,7 +95,7 @@ import org.json.JSONObject
     if(model.searchResult.optString("query").isNotBlank()) {
         WhiteCard {
             Text("检索结果",style=MaterialTheme.typography.titleSmall)
-            Text("词项匹配只用于寻找片段，不代表答案正确。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
+            Text("匹配到词语不等于支持答案，请核对原文。",style=MaterialTheme.typography.bodyMedium)
             if(model.searchResult.objects("candidates").isEmpty()) Text("未找到匹配原文。试试更具体的词，或补充资料。",style=MaterialTheme.typography.bodyMedium)
             for(candidate in model.searchResult.objects("candidates")) {
                 Text("${candidate.optString("source_title")} · v${candidate.optInt("revision")} · 第 ${candidate.optInt("page")} 页",color=WenjiColors.Teal,style=MaterialTheme.typography.titleSmall)
@@ -138,9 +141,9 @@ import org.json.JSONObject
                 if(source.getInt("revision")!=revisionDraft.baseRevision) Notice("资料已有新版本。当前草稿仍基于 v${revisionDraft.baseRevision}，保存时会校验版本冲突。",Tone.Red)
                 InputField(revisionDraft.text,{model.editors.updateRevision(sourceId,it)},"新版本全文",minLines=5,maxLines=10)
                 Text("未提交草稿仅在本次会话保留，结束应用后可能丢失。",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall)
-                Row(horizontalArrangement=Arrangement.spacedBy(10.dp)) {
-                    PrimaryAction("保存新版本",{model.mutate("/sources/$sourceId/revisions",JSONObject().put("base_revision",revisionDraft.baseRevision).put("text",revisionDraft.text)){model.editors.finishRevision(sourceId,revisionDraft)}},model.canWrite()&&revisionDraft.text.isNotBlank())
-                    TextButton(onClick={model.editors.discardRevision(sourceId)}) { Text("取消") }
+                AdaptiveActions { actionModifier ->
+                    PrimaryAction("保存新版本",{model.mutate("/sources/$sourceId/revisions",JSONObject().put("base_revision",revisionDraft.baseRevision).put("text",revisionDraft.text)){model.editors.finishRevision(sourceId,revisionDraft)}},model.canWrite()&&revisionDraft.text.isNotBlank(),modifier=actionModifier)
+                    TextButton(onClick={model.editors.discardRevision(sourceId)},modifier=actionModifier) { Text("取消") }
                 }
             }
         }

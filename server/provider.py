@@ -38,6 +38,7 @@ class Proposal:
     conflict: bool = False
     has_example: bool = False
     claims: list | None = None
+    remote_called: bool | None = None
 
 
 class ExtractiveDemoProvider:

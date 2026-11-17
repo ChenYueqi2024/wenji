@@ -1,180 +1,154 @@
 # 问迹
 
-**把课堂上的一句“为什么”，连到有出处的解释和下一次独立作答。**
+**课堂上先留下一个“为什么”，课后再把答案接回原文。**
 
-> 资源分配图有环，一定死锁吗？
+> “资源分配图有环，一定死锁吗？”
 >
-> 答案里的关键条件，可能藏在讲义的某一句话里。等到几周后复习，依据还找得到吗？如果讲义改了，旧解释又该怎么办？
+> 先记下。讲义还没拿到，也可以让模型解释、自己答一次。
+> 等资料导入，再核对那句关键条件，把有依据的答案放到前面。
+> 如果讲义改了，旧答案也应该提醒你重新检查。
 
-问迹是一款 **Android 课堂疑问溯源与复习助手**。从记下一条疑问开始，它把问题、资料原文、页码、版本和复习卡连起来：查到解释后先核对依据，复习时先自己回答；资料修订或撤回后，相关解释与卡片会进入待复核状态。
+问迹是一款 **Android 课堂疑问溯源与复习助手**。它把记录疑问、模型解释、课程引用和独立作答连成一条学习路径。手机可以独立运行；资料处理和学习记录留在本机，需要生成模型答案时才联网。
 
-**本次版本：0.4.1 手机独立版开发预览** · Kotlin / Jetpack Compose · Chaquopy / Python / SQLite
+**当前版本：v0.5.1-preview** · Android 8.0+ · Kotlin / Compose · Python / SQLite
 
-[下载手机独立版](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.1-preview) · [手机模型设置](MODEL_SETUP.txt) · [验证记录](docs/VALIDATION.md) · [AI 协作说明](docs/AI_DEVELOPMENT.md)
+[下载 APK](https://github.com/ChenYueqi2024/wenji/releases/download/v0.5.1-preview/wenji-0.5.1-preview.apk) · [发布说明](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.5.1-preview) · [模型配置](MODEL_SETUP.txt) · [验证记录](docs/VALIDATION.md)
 
-> 0.4 将资料处理、检索、引用核对和学习记录放进手机。日常使用无需电脑、Python 安装或 ADB 转发；默认固定案例可以离线完成。需要通用 AI 解释时，在应用内配置个人 API Key，由手机联网调用所选模型。
+## 从“没听懂”到“说得清”
 
-版本为 `v0.4.1-preview`（versionCode `6`），APK 文件名为 `wenji-0.4.1-preview.apk`。本次修复模型设置错误提示被藏在滚动底部的问题，并保留非密钥字段的旋转草稿。构建、26 项 JVM 测试与 Lint 检查通过，已在无 ADB 反向转发的 MuMu 中完成横竖屏错误可见性及协议草稿旋转复测。67 项 Python 与 4 项设备测试为 0.4.0 基线，本轮未重复执行。手机端真实供应商调用、实体手机、软键盘及有效手动作答仍未验证，范围详见[验证记录](docs/VALIDATION.md)。
-
-## 从一条疑问开始
-
-| 你做的事 | 问迹接着做什么 |
+| 学习中的一刻 | 问迹帮你接上下一步 |
 | --- | --- |
-| **课上记下来**：“有环就一定死锁吗？” | 在手机本地保存疑问，不需要联网或连接电脑。 |
-| **把讲义放进来**：导入文字或可复制文本的 PDF | 在课程内检索候选片段，把引用连到原文、页码和资料版本。 |
-| **沿着出处看解释** | 默认展示固定案例；启用模型后，每次生成前确认端点、模型和问题，再核对生成结果的引用。 |
-| **合上解释，自己答一次** | 先独立作答，再查看参考关键点、自评并安排复习；不自动判题或标记“已掌握”。 |
-| **讲义改版了** | 相关解释和复习卡进入待复核，提醒你重新检查依据。 |
+| **课上来不及问** | 写一句疑问，离线保存，不用先整理完整笔记。 |
+| **课后还没有讲义** | 单独确认后，仅把问题发给所选模型，生成通用答案和复习卡，标注“尚无课程依据”。 |
+| **拿到课程资料了** | 导入文字或可复制文本 PDF，再确认生成引用版答案。有效的课程资料版优先显示，原通用答案和作答历史保留。 |
+| **觉得自己看懂了** | 先独立作答，再看参考内容、自评并记录复习。模型不会替你宣布“已掌握”。 |
+| **讲义换了版本** | 依赖旧资料的解释与卡片进入待复核，提醒你回到新依据。 |
 
-每次查看解释，都能继续追问：**“答案来自哪里，依据现在还有效吗？”**
+**先有一个可学习的答案，再让它拥有可核对的出处。** 两种答案始终标明来源；通用模型回答不会被包装成课程原文证明。
 
-## 三步开始，不用连接电脑
+## 两种方式开始
 
-1. **安装并打开问迹。** 从[发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.1-preview)下载 `wenji-0.4.1-preview.apk`，在手机上直接安装；下载资产以发布页为准。支持 **Android 8.0（API 26）及以上的 64 位 arm64 / x86_64 设备**，不支持仅有 32 位运行环境的设备。首次体验可保持规则演示模式。
-2. **导入内置教材。** 打开“资料”，点击“导入内置合成教材”。两页可复制文本 PDF 已包含在 APK 中，无需额外下载。也可通过系统文件选择器导入自己的文本 PDF 或 UTF-8 文本。
-3. **从问题走到独立作答。** 记录“资源分配图有环，是否一定死锁？”，查找依据，核对原文、页码和版本；进入复习，先自己回答，再看参考关键点、自评并安排复习。
+1. **安装。** 从[发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.5.1-preview)下载 `wenji-0.5.1-preview.apk`。支持 Android 8.0（API 26）及以上、64 位 arm64-v8a / x86_64 运行环境；不需要电脑服务、Python 安装或 ADB 转发。已有 0.4.x / 0.5.x 可覆盖安装，保留本地数据请勿先卸载。
+2. **选一种体验。** 想离线试用，在“资料”页导入内置的两页合成教材，再记录“资源分配图有环，是否一定死锁？”。想回答自己的问题，点击首页“添加或选择模型”，配置一个供应商和模型。
+3. **开始一次学习。** 有资料就查找课程依据；没资料就确认生成通用答案与复习卡。进入“复习”，先写下自己的理解，再查看参考内容。
 
-这三步可以离线完成。默认规则只覆盖这个合成案例；其他问题需要自行核对资料，或配置联网模型后生成解释。手机独立运行不代表安装包内包含通用大模型。
+离线规则只解答内置的资源分配图案例。通用 AI 需要兼容的服务、个人 API Key 和网络，APK 内没有内置通用大模型。
 
-想继续体验资料变化：在原资料上执行修订，使用 [`resource_graph_v2.txt`](fixtures/resource_graph_v2.txt)，观察旧解释和旧卡进入待复核；另行导入一份资料不会修订原资料。撤回资料会清理手机中的相关正文和派生引用，保留个人历史作答并显示来源警示。
+想体验依据失效：在原资料上执行修订，使用 [`resource_graph_v2.txt`](fixtures/resource_graph_v2.txt)，观察旧解释和卡片进入待复核。另行导入一份资料不会自动修订原资料。所有内置教材均为合成材料，不是真实课堂采样。
 
-[`conflicting_material.txt`](fixtures/conflicting_material.txt) 和 [`insufficient_question.txt`](fixtures/insufficient_question.txt) 可用于合成冲突与资料不足场景。演示材料均为开发编写，不是真实课堂采样。
+## 你的供应商，你的模型
 
-### 从 0.3 升级时，资料在哪里？
+首页入口直接打开 **供应商与模型**。管理方式很简单：
 
-0.4 使用新的手机学习空间，不自动迁移电脑数据库、旧手机缓存或旧待发送请求。原资料仍保留在电脑，旧 Room 数据也不主动删除。需要的资料可重新导入手机；旧学习记录目前没有自动迁移入口。手机模型设置同样需要重新填写，不会从电脑复制密钥。
+**添加供应商 → 添加模型 → 使用此模型**
 
-## 看看界面
+- 每个供应商独立保存地址、API 格式和一个加密 Key，可添加多个模型及各自输出上限。同一服务的不同 Key 可以分别建立供应商条目。
+- 最多保存 20 个供应商、每个 40 个模型。保存新配置不会自动启用；由你明确选择下一次生成所用的模型。
+- 暂停模型、切回离线会保留配置。删除当前模型或供应商后回到离线，不自动改用另一家服务。
+- 保存与切换不会发送模型请求。每次生成前，都会再次确认实际端点、模型、问题及发送范围。
+- 模型名和可识别的第三方别名可以显示官方上下文、输出上限与图像能力参考。它不是当前部署的能力探测，也不会擅自改写模型名或参数；问迹当前只发送文本。
 
-### 0.4.1 手机独立版：疑问、资料与复习
-
-以下是 **0.4.1 在 MuMu 中的实际运行截图**，没有 ADB 反向转发，使用内置合成教材与固定规则解释；未调用真实模型。升级后资料与疑问保留，引用可查看原文、页码和文本位置，复习页仍要求先独立作答。
-
-<img src="docs/images/standalone-v041-citation-portrait.png" width="250" alt="0.4.1 疑问页：规则解释及可展开的原文、页码与文本位置"> <img src="docs/images/standalone-v041-sources-portrait.png" width="250" alt="0.4.1 资料页：手机内保存的两页合成教材"> <img src="docs/images/standalone-v041-review-portrait.png" width="250" alt="0.4.1 复习页：待独立作答，未自动标记掌握">
-
-[查看横屏设置错误提示](docs/images/standalone-v041-settings-error-wide.png)：空配置保存后的错误固定显示在标题下，滚动到底后仍可见，保存与取消按钮可达。协议菜单的四个选项完整，未保存的 Responses 协议选择在旋转后保留；未输入 API Key，其旋转丢弃行为只核对代码。
-
-此前 0.4.0 实查已完成内置两页 PDF 导入、演示疑问保存与规则解释生成。自动化粘贴和 BackSpace 输入注入控制字符，未提交有效作答；0.4.1 复测时复习草稿已清空，仍为待独立作答。本组截图不代表软键盘、真实输入法或完整手动作答流程已通过。
-
-### 生成前确认，生成后查原文
-
-以下是 **0.3.0 电脑版服务架构下的历史截图**，来自 MuMu，展示单次请求确认与引用展开。使用合成教学材料和本机模拟响应，界面中的“非真实模型”标签保留；这些图片既不是外部真实模型回答的截图，也不是 0.4 手机独立运行的验收证据。
-
-<img src="docs/images/model-consent-portrait.png" width="270" alt="0.3.0 历史截图：生成前核对端点、模型与问题"> <img src="docs/images/model-citation-portrait.png" width="270" alt="0.3.0 历史截图：本机模拟回答及可展开的原文引用">
-
-[查看历史横屏确认弹窗](docs/images/model-consent-wide.png)。这轮历史检查中，取消没有调用模拟服务，确认后调用一次，再次生成需要重新确认。
-
-### 疑问、资料、复习，围绕同一条线索
-
-以下为 **0.2.0 的历史界面截图**，同样来自 MuMu 实际运行，内容为合成教学材料；用于展示三页工作流，不代表新版本全流程验收。
-
-![0.2.0 历史截图：横屏疑问页，查看问题、解释和资料引用](docs/images/questions-wide.png)
-
-<img src="docs/images/questions-portrait.png" width="250" alt="0.2.0 历史截图：竖屏疑问页"> <img src="docs/images/sources-portrait.png" width="250" alt="0.2.0 历史截图：资料与版本管理"> <img src="docs/images/review-portrait.png" width="250" alt="0.2.0 历史截图：独立作答与复习">
-
-## 答案如何留下可追溯的线索
-
-```mermaid
-flowchart LR
-    Q[课堂疑问] --> A[解释中的结论]
-    A --> E[原文片段与页码]
-    E --> V[资料版本]
-    R[复习卡] --> A
-    V -. 修订或撤回 .-> S[关联解释与卡片待复核]
-```
-
-- **引用能回到原文。** 手机内置引擎检查模型返回的结构、引用归属、原文位置与资料版本。引用定位正确，仍不等于结论已获语义证明；阅读者需要核对。
-- **资料变化会传到旧答案。** 保存生成结果前再次检查问题、资料和配置，过期结果会被丢弃。模型用过的上下文变化时，整条解释和复习卡会保守地进入待复核。
-- **缺资料时可以停下来。** 没有词项候选就不发起模型请求。模型返回“资料不足”或“存在冲突”时，不生成正常自测卡；通用语义判断能力仍待评测。
-- **重试有明确边界。** 同一已发送请求 ID 不会重复调用模型。刷新与应用重启不会自动重发待处理的解释请求；先查看最新状态，必要时停止旧重试，再重新查找依据并确认。新请求可能再次计费。
-
-### 模型接入：可选，且由你确认
-
-在“手机模型设置”中填写协议、API 基址、模型名称、个人 API Key 和最大输出 Token，提供四种文本生成协议适配器：
-
-| 配置协议 | 接口类型 |
+| API 格式 | 对应接口 |
 | --- | --- |
-| `openai_chat` | OpenAI Chat Completions 兼容接口 |
+| `openai_chat` | Chat Completions 兼容接口 |
 | `openai_responses` | Responses |
 | `anthropic_messages` | Anthropic Messages |
 | `gemini_generate_content` | Gemini generateContent |
 
-保存设置不会发出模型请求。每次生成前仍需核对地址、模型和本次问题，再单独确认。密钥使用 Android Keystore 支持的 AES/GCM 加密，保存在应用私有存储；安装包不包含个人真实密钥。重新打开设置不会回填密钥；同一 API 基址可留空沿用已保存密钥，更换地址必须重新输入。
+兼容的是这些协议结构。专有签名、特殊参数或响应格式仍可能需要适配；尚无批量配置文件导入、自动发现远端模型或密钥轮换池。完整说明见 [MODEL_SETUP.txt](MODEL_SETUP.txt)。
 
-服务需要兼容所选协议；专有签名、特殊请求或响应格式需要新增适配器，并非任意 API 地址都能直接使用。手机设置提供常用参数；多档案、额外请求头和其他兼容开关仍属于可选的电脑开发配置，详见 [MODEL_SETUP.txt](MODEL_SETUP.txt)。
+Key 使用 Android Keystore 支持的 AES/GCM 加密，保存在应用私有空间；安装包不包含个人密钥。编辑时不回填已保存的 Key，更换供应商地址须重新输入。旧单一配置提供本地迁移；迁移测试范围和一次实际设备配置为空的核查结果见[验证记录](docs/VALIDATION.md#配置迁移与实际设备观察)。
 
-**历史联调范围：电脑服务的两次真实模型请求。** 2026-11-17，0.3 电脑服务对一个 Chat Completions 兼容端点测试了两条合成教学用例：有依据时返回带引用解释；缺少实验统计时返回“资料不足”，未生成正常复习卡。同请求重放未重复调用，来源修订后结果进入待复核。这不是 0.4 手机端的真实模型验证，也不代表全部供应商兼容或通用回答质量达标。其他协议为本机模拟验证，详情见 [验证记录](docs/VALIDATION.md)。
+## 看看它现在的样子
+
+以下是 **v0.5.1 在 MuMu 中的实际运行截图**。首页突出模型入口，复习页区分课程资料卡和无依据通用卡。截图时处于离线模式，显示了保留的历史内容；本次截图检查没有调用真实模型。
+
+<img src="docs/images/standalone-v051-home.png" width="270" alt="v0.5.1 首页：突出模型配置与疑问记录"> <img src="docs/images/standalone-v051-review.png" width="270" alt="v0.5.1 复习页：先独立作答，区分课程资料卡与通用卡">
+
+正文增至 16sp、次要文字 14sp，提示颜色加深；小屏页头分行，横屏设置内容可滚动。实际检查发现大字体会挤压资料页按钮，v0.5.1 已改为按空间上下排列：[查看 320dp、1.3 倍字体的修复效果](docs/images/standalone-v051-large-text-actions.png)。更多过程见[界面改进记录](docs/UI_CHANGES.md)。
+
+## 每个答案都有自己的证据状态
+
+```mermaid
+flowchart LR
+    Q[课堂疑问] --> G[通用模型答案 · 尚无课程依据]
+    G --> GR[先独立作答与复习]
+    Q --> C[课程资料版答案 · 优先显示]
+    C --> E[原文片段与页码]
+    E --> V[资料版本]
+    C --> CR[课程复习卡]
+    V -. 修订或撤回 .-> R[关联解释与卡片待复核]
+```
+
+- **引用能回到原文。** 引擎检查引用归属、文本位置、页码与版本。定位正确仍不等于语义正确，需要对照原文核对。
+- **无依据的答案不冒充有依据。** 通用卡有明确标识，不据此自动改变课程疑问的掌握状态。资料导入只在本地保存；随后确认生成资料版，成功后优先显示并保留旧答案、卡片和作答。
+- **不足与冲突有出口。** 课程检索没有候选时不联网；资料不足或冲突时保留缺项，不强造课程引用。用户仍可另行确认通用参考。
+- **旧依据不能悄悄延用。** 来源变化沿依赖关系传播，保存结果前再次检查问题、资料和配置。两版答案还没有自动语义一致性判断。
+- **重试不会悄悄重发。** 同一已发送请求 ID 不再次调用模型；刷新和重启不自动重发。结果不确定时先核对记录，新生成需要再次确认，也可能再次计费。
 
 ## 手机里运行了什么
 
 ```mermaid
 flowchart LR
-    UI[Kotlin / Compose 界面] --> B[Chaquopy 进程内桥接]
-    UI --> R[Room 待处理操作与缓存]
-    B --> C[Python 资料与学习引擎]
-    C --> D[手机私有 SQLite]
-    C --> P[pypdf 本地解析]
-    C -. 单次确认后联网 .-> M[用户配置的模型 API]
+    UI[Kotlin / Compose] --> R[Room · 操作队列与缓存]
+    UI --> B[Chaquopy · 进程内调用]
+    B --> C[Python 学习核心]
+    C --> D[本机 SQLite]
+    C --> P[pypdf · 本地解析]
+    C -. 用户单次确认 .-> M[当前选用的模型 API]
 ```
 
-APK 内包含 Python 3.12 运行时、经过筛选的业务模块和 pypdf。界面直接调用进程内引擎，不启动手机 HTTP 服务；电脑服务和 `127.0.0.1:8765` 不参与手机日常使用。两个 64 位 ABI 及运行库会增加安装包体积，具体大小以发布资产为准。[Chaquopy 官方构建说明](https://chaquo.com/chaquopy/doc/current/android.html)介绍了 Python 与 ABI 的打包方式。
+APK 包含 Python 3.12、经过筛选的业务模块和 pypdf，不启动手机 HTTP 服务。电脑上的 `127.0.0.1:8765` 服务保留作开发调试，日常手机使用不依赖它，两个数据域也不会自动同步。
 
-## 从源码构建与检查
+课程引用请求发送问题和检索命中的最多 8 个片段、合计 12000 字符；通用参考只发送问题。不会随生成请求上传整份 PDF 或学习记录。片段仍可能含敏感内容，发送前请核对。撤回本地资料不能撤回服务商已经收到的内容。
 
-以下仅供开发者；安装 APK 的用户不需要安装这些工具。构建需要 **JDK 17、Android SDK 35、Build Tools 35.0.0、Python 3.12**。Gradle 8.11.1 由 wrapper 获取，Chaquopy 17.2.0 负责打包 Python；首次构建需联网下载 Gradle、Android 依赖、Python 运行时与 pypdf。
+## 已经验证到哪一步
 
-用 Android Studio 打开 `android/` 并配置 JDK 与 SDK；或在已设置 `JAVA_HOME` 和 `ANDROID_HOME` 的 PowerShell 中执行。若 Python 3.12 不在 PATH，可通过 `WENJI_BUILD_PYTHON` 指向其可执行文件：
+| 范围 | 真实记录 |
+| --- | --- |
+| v0.5.1 构建与 JVM | 构建成功，43 项测试通过；Lint 0 错误、11 项提示。 |
+| v0.5.1 MuMu | 13 项隔离设备测试通过，覆盖学习流程、传输约束和 7 项多供应商存储场景。没有 ADB 反向转发。 |
+| 界面复验 | 指定页面的横竖屏、约 320dp 窄屏及 1.3 倍字体检查；发现并修复按钮挤压。不是全机型或完整无障碍验收。 |
+| Python 基线 | v0.4.2 全量 88 项通过；v0.5.x 没有重跑全部 Python 测试，设备回归再次执行内嵌核心流程。 |
+| 真实模型 | v0.4.2 在 MuMu 中确认调用一次“什么是强化学习？”，通用参考保存并显示；补卡使用本地历史文本，没有第二次调用。v0.5.x 未新增真实调用。 |
+
+测试数量不代表回答准确率或学习效果。实体手机、不同输入法、软键盘遮挡、完整首启流程与学习成效仍需专项验证。试用方报告本人和 8 名同学使用手机体验，整体流畅但有小问题；没有提供完整任务记录或量化数据，不据此推出完成率、耗时或效果结论。详见[验证记录](docs/VALIDATION.md)。
+
+## 从源码构建
+
+开发环境需要 **JDK 17、Android SDK 35、Build Tools 35.0.0、Python 3.12**。先设置 `JAVA_HOME` 指向 JDK、`ANDROID_HOME` 指向 SDK，或用 Android Studio 配置项目；下面的 PowerShell 命令从仓库根目录执行。Gradle 8.11.1 使用 wrapper，Chaquopy 17.2.0 打包运行时，首次构建需下载依赖。安装 APK 的用户不需要这些工具。
 
 ```powershell
-$env:WENJI_BUILD_PYTHON = 'C:\Python312\python.exe' # 换成自己的 Python 3.12 路径
-.\android\build-local.ps1 -Tasks assembleDebug,lintDebug,testDebugUnitTest
+$env:WENJI_BUILD_PYTHON = 'C:\Python312\python.exe' # 改成自己的 Python 3.12 路径
+.\android\build-local.ps1 -Tasks assembleDebug,assembleDebugAndroidTest,testDebugUnitTest,lintDebug
 ```
 
-APK 输出到 `android/app/build/outputs/apk/debug/app-debug.apk`。后端检查可运行：
+APK 输出到 `android/app/build/outputs/apk/debug/app-debug.apk`。共享 Python 核心检查使用单独环境，并以 `WENJI_PYTHON` 指定测试解释器：
 
 ```powershell
+& $env:WENJI_BUILD_PYTHON -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+$env:WENJI_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
 .\scripts\test.ps1
 ```
 
-0.4.0 已通过 **67 项 Python 测试，其中 11 项覆盖手机进程内桥接**：离线 PDF 与学习流程、模型确认、配置切换、无效配置拒绝、进程中断保留请求等。测试使用临时数据库和合成凭证；桥接测试禁止 socket，协议测试使用临时回环模拟服务。它们不构成手机安装、Android Keystore、实际网络或真实模型调用的验收结果。
-
-HTTP smoke 同样使用临时回环服务，不改动演示数据库；日志写入被 Git 忽略的本地 `reports/`。若运行环境阻止回环连接，应在允许 localhost 的本机终端复验。0.4.1 已完成离线构建、26 项 JVM 测试（0 失败、0 错误）及 Lint（0 错误、9 项提示），并完成上述 MuMu GUI 复测；共享学习核心未改，67 项 Python 与 4 项设备测试沿用 0.4.0 基线，未在本轮重跑。APK 校验信息、失败恢复与实际检查范围见 [VALIDATION.md](docs/VALIDATION.md)。当前为开发预览，不包含正式发行签名或应用商店发布材料。
-
-### 可选：保留的电脑开发服务
-
-共享领域引擎仍可通过电脑上的 HTTP 服务进行开发和协议调试。此路径使用独立的电脑数据库，不连接或同步手机数据库，也不是运行 0.4 APK 的前提。以下命令从仓库根目录执行：
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-$env:WENJI_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
-.\scripts\run_service.ps1
-```
-
-服务只监听 `127.0.0.1:8765`，使用 `data/wenji.sqlite3`。如需调试高级模型配置，可参考 [models.example.json](config/models.example.json) 与 [MODEL_SETUP.txt](MODEL_SETUP.txt) 的电脑开发章节，运行 `run_model_service.ps1`。这些 JSON 档案和环境变量不会自动进入手机。
-
-### 目录导航
+HTTP 测试使用临时回环服务，需要本机 localhost 可用；测试结果不能代替实际供应商联通检查。可选电脑服务及高级配置见 [MODEL_SETUP.txt](MODEL_SETUP.txt)。
 
 ```text
-android/       Kotlin / Compose、手机模型设置、Room、Chaquopy 打包与测试
-server/        共享 Python 领域引擎、手机进程内桥接、可选电脑 HTTP 服务
-tests/         Python 领域、手机桥接与模型协议回归测试
-fixtures/      合成教学文本与可复制文本 PDF
-scripts/       开发服务启动、自动化检查与设备辅助脚本
-config/        无密钥电脑模型配置示例
-docs/          验证记录、界面变更与 AI 协作说明
+android/    Compose 界面、Room、Keystore、Chaquopy 与 Android 测试
+server/     共享学习核心、手机桥接、可选电脑 HTTP 服务
+tests/      Python 领域与协议回归
+fixtures/   合成教学材料
+config/     无密钥模型配置示例
+docs/       分版本验证、界面变化与 AI 协作说明
 ```
 
-## 数据与当前边界
+## 当前边界与协作
 
-手机 SQLite 保存资料、解释、引用和学习记录，Room 保存待处理操作与最近缓存。启用外部模型时，只发送本次问题和词项检索命中的最多 **8 个片段、合计 12000 字符**；原 PDF 文件与个人学习记录不随该生成请求上传，但片段可能含敏感内容，使用前需确认资料授权和服务商。撤回资料会清理手机中的相关文本，不能撤回服务商已收到的内容。
+配套的 V1.7 匿名材料：[项目计划书 PDF](https://github.com/ChenYueqi2024/wenji/releases/download/v0.5.1-preview/wenji-project-plan-v1.7.pdf) · [运行与演示说明 PDF](https://github.com/ChenYueqi2024/wenji/releases/download/v0.5.1-preview/wenji-run-guide-v1.7.pdf)。这些是作品说明材料，不代表报名或参赛提交已完成；本人办理的资格与签字文件不进入公开发布。
 
-目前面向单门课程、单设备，没有账户认证、课程成员权限或云端同步，`course_id` 与配置指纹不是权限凭据。手机本地功能无需网络，远程 AI 仍需可用网络、兼容端点和个人密钥。OCR、语音、后台复习通知尚未实现；PDF 限 5 MB、100 页以内的未加密可复制文本。尚无真实学生试用、学习成效或性能结论。
+这是**开发预览调试包**，不是应用商店正式发行版。当前面向单门课程、单设备；没有账户认证、课程成员权限或云同步。只支持文字及未加密的可复制文本 PDF（5 MB、100 页限制），OCR、语音、多模态输入、后台复习通知和跨设备导出接续尚未实现。
 
-## AI 协作与许可
+代码与文档由 Codex 辅助开发，[AI 协作说明](docs/AI_DEVELOPMENT.md)如实记录工作与限制，不替代维护者理解实现，也不构成个人独立贡献证明。公开仓库不含个人报名、签字或身份材料。
 
-随 APK 附带的运行库声明见 [第三方组件说明](android/app/src/main/assets/notices/NOTICES.txt)，相邻目录保留对应许可原文。
-
-代码与文档由 Codex 辅助开发，实际分工和限制见 [AI 协作说明](docs/AI_DEVELOPMENT.md)。协作摘要不代表任何人已独立完成、审查或理解全部实现。
-
-本项目 **尚未指定开源许可证**；公开源码不等同于授予复制、修改或再分发许可。第三方组件适用各自许可：[Chaquopy 为 MIT](https://github.com/chaquo/chaquopy/blob/master/LICENSE.txt)，[pypdf 为 BSD-3-Clause](https://github.com/py-pdf/pypdf/blob/main/LICENSE)；Python 运行时、Android 依赖和 Gradle wrapper 也须保留各自要求的许可声明。第三方许可不替代本项目许可。本仓库不包含个人报名、签字或身份材料。
+项目尚未指定开源许可证。公开源码不等于授予复制、修改或再分发许可；第三方运行库适用各自许可证，见[组件与许可说明](android/app/src/main/assets/notices/NOTICES.txt)。

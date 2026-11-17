@@ -51,7 +51,51 @@ class ModelInfoTest {
 
     @Test fun answerLabelsReflectStoredProviderRatherThanCurrentConfiguration() {
         assertEquals("固定案例规则演示 · 未调用大模型", answerProviderLabel("deterministic-extractive-v1"))
-        assertEquals("llm:course-model", answerProviderLabel("llm:course-model"))
+        assertEquals("模型 · course-model", answerProviderLabel("llm:course-model"))
         assertEquals("提供方未记录", answerProviderLabel(""))
     }
+
+    @Test fun historicDemoRecoveryUsesCurrentVerifiedConfiguration() {
+        val demoProvider = "deterministic-extractive-v1"
+        assertEquals(DemoRecoveryAction.CONFIGURE_MODEL, demoRecoveryAction(demoProvider,"needs_material",ModelInfo(mode="demo"),true))
+        assertEquals(DemoRecoveryAction.CONFIRM_CURRENT_MODEL, demoRecoveryAction(demoProvider,"needs_material",remote,true))
+        assertEquals(DemoRecoveryAction.REFRESH_CONFIG, demoRecoveryAction(demoProvider,"needs_material",remote,false))
+        assertEquals(DemoRecoveryAction.REFRESH_CONFIG, demoRecoveryAction(demoProvider,"needs_material",remote.copy(fingerprint=""),true))
+        assertEquals(DemoRecoveryAction.NONE, demoRecoveryAction(demoProvider,"ready",remote,true))
+        assertEquals(DemoRecoveryAction.NONE, demoRecoveryAction("llm:course-model","needs_material",remote,true))
+    }
+
+    @Test fun generalReferenceCanNeverUseDemoAndAlwaysNeedsRemoteConfirmation() {
+        assertEquals(ExplainAction.BLOCKED,modelRequestAction(ModelInfo(mode="demo"),true,ModelRequestKind.GENERAL_REFERENCE))
+        assertEquals(ExplainAction.CONFIRM_REMOTE,modelRequestAction(remote,true,ModelRequestKind.GENERAL_REFERENCE))
+        assertEquals(ExplainAction.BLOCKED,modelRequestAction(remote,false,ModelRequestKind.GENERAL_REFERENCE))
+        assertEquals(ExplainAction.DEMO,modelRequestAction(ModelInfo(mode="demo"),true,ModelRequestKind.COURSE_EVIDENCE))
+        assertNotEquals(ModelRequestKind.GENERAL_REFERENCE.pathSuffix,ModelRequestKind.COURSE_EVIDENCE.pathSuffix)
+    }
+
+    @Test fun ordinaryHistoryLabelsDoNotExposeStoredPrivateEndpoint() {
+        assertEquals("模型 · openai_chat · course-model",answerProviderLabel("llm:openai_chat:course-model @ https://private.example/v1"))
+        assertEquals("提供方未记录",answerProviderLabel("https://private.example/v1"))
+        assertEquals("提供方未记录",answerProviderLabel("llm:https://private.example/v1"))
+    }
+
+    @Test fun firstDemoIntroductionOnlyUsesVerifiedUnconfiguredState() {
+        val demo = ModelInfo(mode="demo")
+        assertTrue(shouldShowDemoIntro(demo,true,false))
+        assertFalse(shouldShowDemoIntro(remote,true,false))
+        assertFalse(shouldShowDemoIntro(demo,false,false))
+        assertFalse(shouldShowDemoIntro(ModelInfo(),true,false))
+        // Both dismissal and "configure" persist this acknowledgement; later refreshes do not reopen it.
+        assertFalse(shouldShowDemoIntro(demo,true,true))
+        assertFalse(shouldShowDemoIntro(demo,false,true))
+    }
+
+    @Test fun currentCourseReviewLeadsWithoutHidingGeneralOrHistoricalWork() {
+        val cards = listOf("general" to reviewDisplayPriority("general_reference","awaiting_attempt"),
+            "old-general" to reviewDisplayPriority("general_reference","needs_review"),
+            "course" to reviewDisplayPriority("course_evidence","awaiting_attempt"),
+            "old-course" to reviewDisplayPriority("course_evidence","needs_review"))
+        assertEquals(listOf("course","general","old-general","old-course"),cards.sortedBy { it.second }.map { it.first })
+    }
+
 }

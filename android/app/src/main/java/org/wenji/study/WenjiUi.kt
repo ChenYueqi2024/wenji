@@ -16,22 +16,26 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 internal object WenjiColors {
     val Background = Color(0xFFF6F7F4)
     val Ink = Color(0xFF20313D)
-    val Muted = Color(0xFF627179)
-    val Teal = Color(0xFF267A73)
+    // Secondary text still needs to read comfortably on the pale surfaces.
+    val Muted = Color(0xFF4D5D66)
+    val Teal = Color(0xFF176C63)
     val TealSoft = Color(0xFFE8F3EF)
-    val Border = Color(0xFFE3E8E4)
+    val Border = Color(0xFFD4DDDA)
+    val FieldBorder = Color(0xFF86968F)
     val Field = Color(0xFFF7F9F7)
-    val Amber = Color(0xFF956323)
+    val Amber = Color(0xFF805316)
     val AmberSoft = Color(0xFFFBF3E4)
-    val Red = Color(0xFFA54F49)
+    val Red = Color(0xFFA03E38)
     val RedSoft = Color(0xFFFCF0ED)
 }
 
@@ -44,7 +48,7 @@ internal fun WenjiTheme(content: @Composable () -> Unit) {
             background = WenjiColors.Background, onBackground = WenjiColors.Ink,
             surface = Color.White, onSurface = WenjiColors.Ink,
             surfaceVariant = WenjiColors.Field, onSurfaceVariant = WenjiColors.Muted,
-            outline = WenjiColors.Border, outlineVariant = WenjiColors.Border,
+            outline = WenjiColors.FieldBorder, outlineVariant = WenjiColors.Border,
             error = WenjiColors.Red, errorContainer = WenjiColors.RedSoft,
             secondary = WenjiColors.Teal, secondaryContainer = WenjiColors.TealSoft,
             onSecondaryContainer = WenjiColors.Teal, surfaceTint = Color.Transparent,
@@ -58,14 +62,14 @@ internal fun WenjiTheme(content: @Composable () -> Unit) {
             headlineLarge = TextStyle(fontSize = 30.sp, lineHeight = 40.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
             headlineMedium = TextStyle(fontSize = 26.sp, lineHeight = 36.sp, fontWeight = FontWeight.Bold),
             titleLarge = TextStyle(fontSize = 21.sp, lineHeight = 31.sp, fontWeight = FontWeight.SemiBold),
-            titleMedium = TextStyle(fontSize = 17.sp, lineHeight = 27.sp, fontWeight = FontWeight.SemiBold),
-            titleSmall = TextStyle(fontSize = 14.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold),
-            bodyLarge = TextStyle(fontSize = 16.sp, lineHeight = 27.sp),
-            bodyMedium = TextStyle(fontSize = 14.sp, lineHeight = 23.sp),
-            bodySmall = TextStyle(fontSize = 12.sp, lineHeight = 19.sp),
-            labelLarge = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
-            labelMedium = TextStyle(fontSize = 12.sp, lineHeight = 18.sp, fontWeight = FontWeight.Medium),
-            labelSmall = TextStyle(fontSize = 11.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium)
+            titleMedium = TextStyle(fontSize = 18.sp, lineHeight = 28.sp, fontWeight = FontWeight.SemiBold),
+            titleSmall = TextStyle(fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.SemiBold),
+            bodyLarge = TextStyle(fontSize = 17.sp, lineHeight = 28.sp),
+            bodyMedium = TextStyle(fontSize = 16.sp, lineHeight = 26.sp),
+            bodySmall = TextStyle(fontSize = 14.sp, lineHeight = 22.sp),
+            labelLarge = TextStyle(fontSize = 15.sp, lineHeight = 22.sp, fontWeight = FontWeight.SemiBold),
+            labelMedium = TextStyle(fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Medium),
+            labelSmall = TextStyle(fontSize = 13.sp, lineHeight = 19.sp, fontWeight = FontWeight.Medium)
         ),
         shapes = Shapes(small = RoundedCornerShape(10.dp), medium = RoundedCornerShape(14.dp), large = RoundedCornerShape(20.dp)),
         content = content
@@ -134,15 +138,36 @@ internal fun toneColors(tone: Tone) = when(tone) {
 }
 @Composable internal fun Notice(text: String, tone: Tone = Tone.Amber) {
     val (ink,fill)=toneColors(tone)
-    Surface(color=fill,shape=RoundedCornerShape(12.dp),modifier=Modifier.fillMaxWidth()) {
-        Row(Modifier.padding(12.dp),horizontalArrangement=Arrangement.spacedBy(9.dp)) {
-            LineIcon(Glyph.Info,Modifier.size(18.dp).padding(top=2.dp),ink)
-            Text(text,color=ink,style=MaterialTheme.typography.bodySmall)
+    Surface(color=fill,shape=RoundedCornerShape(12.dp),modifier=Modifier.fillMaxWidth(),border=BorderStroke(1.dp,ink.copy(alpha=0.20f))) {
+        Row(Modifier.padding(14.dp),horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+            LineIcon(Glyph.Info,Modifier.padding(top=3.dp).size(20.dp),ink)
+            Text(text,Modifier.weight(1f),color=ink,style=MaterialTheme.typography.bodyMedium)
         }
     }
 }
-@Composable internal fun PrimaryAction(text: String, onClick: () -> Unit, enabled: Boolean = true, glyph: Glyph? = null) {
-    Button(onClick=onClick,enabled=enabled,contentPadding=heightPadding(),shape=RoundedCornerShape(12.dp)) {
+/** Stack related actions before narrow cards or enlarged text squeeze their labels. */
+@Composable internal fun AdaptiveActions(
+    modifier: Modifier = Modifier,
+    minimumRowWidth: Dp = 300.dp,
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(12.dp),
+    content: @Composable (actionModifier: Modifier) -> Unit,
+) {
+    val fontScale = LocalDensity.current.fontScale.coerceAtLeast(1f)
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        if (maxWidth < minimumRowWidth * fontScale) {
+            Column(Modifier.fillMaxWidth(),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                content(Modifier.fillMaxWidth())
+            }
+        } else {
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=horizontalArrangement) {
+                content(Modifier)
+            }
+        }
+    }
+}
+
+@Composable internal fun PrimaryAction(text: String, onClick: () -> Unit, enabled: Boolean = true, glyph: Glyph? = null, modifier: Modifier = Modifier) {
+    Button(onClick=onClick,enabled=enabled,modifier=modifier.heightIn(min=48.dp),contentPadding=heightPadding(),shape=RoundedCornerShape(12.dp)) {
         if(glyph!=null) { LineIcon(glyph,Modifier.size(18.dp),if(enabled) Color.White else WenjiColors.Muted);Spacer(Modifier.width(8.dp)) }
         Text(text)
     }
@@ -154,5 +179,5 @@ private fun heightPadding() = PaddingValues(horizontal=18.dp,vertical=12.dp)
         singleLine = maxLines == 1, shape=RoundedCornerShape(13.dp),textStyle=MaterialTheme.typography.bodyMedium,
         leadingIcon=if(leading!=null) { { LineIcon(leading) } } else null,
         colors=OutlinedTextFieldDefaults.colors(unfocusedContainerColor=WenjiColors.Field,focusedContainerColor=Color.White,
-            unfocusedBorderColor=WenjiColors.Border,focusedBorderColor=WenjiColors.Teal))
+            unfocusedBorderColor=WenjiColors.FieldBorder,focusedBorderColor=WenjiColors.Teal))
 }

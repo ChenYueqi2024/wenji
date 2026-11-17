@@ -4,7 +4,8 @@ class ApiFailure(val status: Int, message: String) : Exception(message)
 
 // A queued explanation may have been persisted before the engine received it.
 // Reading current state is safe; spending model quota again requires a new confirmation.
-internal fun mayAutoRetry(path: String): Boolean = !path.endsWith("/explain")
+internal fun mayAutoRetry(path: String): Boolean =
+    ModelRequestKind.entries.none { path.endsWith("/${it.pathSuffix}") }
 
 /** A rejected outbox item must not prevent reading the server's current state. */
 internal suspend fun syncPendingAndRefresh(
