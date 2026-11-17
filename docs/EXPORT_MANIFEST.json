@@ -10,17 +10,17 @@
     "private contest and identity documents",
     "external delivery scripts"
   ],
-  "source_file_count": 56,
+  "source_file_count": 73,
   "source_files": [
     {
       "path": "MODEL_SETUP.txt",
-      "bytes": 7130,
-      "sha256": "aff5d66d42d3b155df4ffb0ce29b0a63895cd36e72bf389de1a0452de0e8931d"
+      "bytes": 12009,
+      "sha256": "90b01b96b8e22a9d1a0ba803c5619246b0a31c1f2ff0d37c537095c1c3f3ba58"
     },
     {
       "path": "android/app/build.gradle.kts",
-      "bytes": 1290,
-      "sha256": "c93bd76c4a72db0f0adea1cc5271a379334a1b9ffb6a578812a7a91f6dc8294f"
+      "bytes": 3310,
+      "sha256": "6a883d14671ffcc0c82cc5bcd55e5238d6d21ca5a933eb90ae7d52c317bc1d2d"
     },
     {
       "path": "android/app/schemas/org.wenji.study.LocalStore/1.json",
@@ -28,9 +28,59 @@
       "sha256": "9e7f302c8cf8c54e6a4375b03dff43ddf9ab62fe1acd4e0f74c123ae21227c8f"
     },
     {
+      "path": "android/app/src/androidTest/AndroidManifest.xml",
+      "bytes": 111,
+      "sha256": "c8fe08b06e479efc7e3d00476fffe693a3e943e2b874b3c6a1ba5156fc180751"
+    },
+    {
+      "path": "android/app/src/androidTest/java/org/wenji/study/PhoneModelTransportTest.kt",
+      "bytes": 9269,
+      "sha256": "9c9c52c126097e86d35aefcd3fc704499ac215e37ad577c79cd98a4584e415c8"
+    },
+    {
+      "path": "android/app/src/androidTest/java/org/wenji/study/PhoneStandaloneTest.kt",
+      "bytes": 14007,
+      "sha256": "1b3f73f123e50baac9d70f014fe327a9a1461c0a79d88c050da7e09e361e2846"
+    },
+    {
       "path": "android/app/src/main/AndroidManifest.xml",
-      "bytes": 870,
-      "sha256": "dee09a5de6c313d4a01f236119c2be54a3306d28f72bdfe5fe3f8fa62543ccb5"
+      "bytes": 854,
+      "sha256": "892ab5853bca7a05d4379b50e1d8a0b23752da217e4fdfe6c22e46748b6cbb70"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/Chaquopy-17.2.0-LICENSE.txt",
+      "bytes": 1076,
+      "sha256": "345a9fdfeed355d37b18569ef277ba56eb0ab7c0b17a08a90163ce8d33d2b862"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/NOTICES.txt",
+      "bytes": 2752,
+      "sha256": "0a90fc20dce86e7ca4fc87940147b4e1995541395e0f439083d4b995035d5099"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/OpenSSL-3.5.9-LICENSE.txt",
+      "bytes": 10175,
+      "sha256": "7d5450cb2d142651b8afa315b5f238efc805dad827d91ba367d8516bc9d49e7a"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/Python-3.12.15-LICENSE.txt",
+      "bytes": 13936,
+      "sha256": "3b2f81fe21d181c499c59a256c8e1968455d6689d269aa85373bfb6af41da3bf"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/Python-3.12.15-incorporated-notices.txt",
+      "bytes": 54130,
+      "sha256": "341832873fd316a37927e79385093fbbfd40a467428480835fe435a80cadf4e5"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/certifi-2026.10.23-LICENSE.txt",
+      "bytes": 989,
+      "sha256": "e93716da6b9c0d5a4a1df60fe695b370f0695603d21f6f83f053e42cfc10caf7"
+    },
+    {
+      "path": "android/app/src/main/assets/notices/pypdf-6.21.4-LICENSE.txt",
+      "bytes": 1605,
+      "sha256": "a97ac230e5f33ef10a5367a850eb01f91f1a0b064e34742c7794d2294557f524"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/EditorSession.kt",
@@ -39,28 +89,48 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/LearningPages.kt",
-      "bytes": 14444,
-      "sha256": "d65bf2963dc73a33ed0c689cba4da8b7325e1e764161bb7cc13236881e344a8f"
+      "bytes": 14456,
+      "sha256": "eaa7cad58db9a62cad402f4fae21ee380b4453ed6b639eddb53ad126aef7a913"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/LocalStore.kt",
-      "bytes": 2266,
-      "sha256": "83e26b7230a476363a8bc79804289ac939f4affd4fc5ed0fbab5bb7d8592eb25"
+      "bytes": 2375,
+      "sha256": "b4e1c2cc6725e620952edcc65747abe993b80252ae2b532048df4336746f7ecb"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/MainActivity.kt",
-      "bytes": 15705,
-      "sha256": "41f466b3da0cf93151a7b7bc4591d9d989d850c55b68ae2da3121bbd99261a7a"
+      "bytes": 16598,
+      "sha256": "0cebce56ea79cda335b5bbfb7cb3072e4071cb603d265af8f3413d7cba2bf4f2"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/ModelInfo.kt",
-      "bytes": 2611,
-      "sha256": "777c813a6edaf297860c3de95fda8b53f6c14603f069327a7c91b63b964276fd"
+      "bytes": 2604,
+      "sha256": "5cbd00e201cee9d1d1db12e5d64d85a9ad42444bf41e6916518ea7161d0e203d"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/ModelSettingsDialog.kt",
+      "bytes": 7129,
+      "sha256": "518606a495b394284fe1795dbfe6468de012ef987a070b9eee4f063d3f27976d"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/ModelSettingsForm.kt",
+      "bytes": 4179,
+      "sha256": "01fdaed0080c4c633d514879451a394de36bcdfbe93637516566c818b8c4e025"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/PhoneEngine.kt",
+      "bytes": 3274,
+      "sha256": "5873877c72e78aebee1571c85c6e0771720b1db101fff7185342a3b236145934"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/SourcePage.kt",
-      "bytes": 11709,
-      "sha256": "417750a8ca75d583ea27544d3e8f17dd85fad7af023b661ffeb0fd3af1a61b18"
+      "bytes": 12236,
+      "sha256": "f3c9ae3e7958974c395b23f50702738d5548937e69b597af400757b458759586"
+    },
+    {
+      "path": "android/app/src/main/java/org/wenji/study/StandaloneSettings.kt",
+      "bytes": 7246,
+      "sha256": "85f37ad172d41e49fe9a5d6c27346099c74517737fd2788dbff5153d9678b895"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/StorageChunks.kt",
@@ -69,13 +139,13 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/SyncRefresh.kt",
-      "bytes": 568,
-      "sha256": "e38a3a2ff386f446f5c6aeaa64b296aab4747392d4cbe21c6efe6ed595923faf"
+      "bytes": 816,
+      "sha256": "31ca8a48e0f3939aae8ea87baebc69015bd0c05d400ab9ade952e7b07ee1016e"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/WenjiModel.kt",
-      "bytes": 12185,
-      "sha256": "e0155eca612f83838c79b1d3980bd67f4026c20f7d0d80769ec6392cf51386c1"
+      "bytes": 16296,
+      "sha256": "ef8ed9846485914ebc513e33e2a7a2316fe5f7a7d594ea6ddd84bd5c78596744"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/WenjiUi.kt",
@@ -113,14 +183,19 @@
       "sha256": "0188e3f9581d496084fbb98d056201ddbefcb04ac65d844d304de5d6e04df978"
     },
     {
+      "path": "android/app/src/test/java/org/wenji/study/ModelSettingsFormTest.kt",
+      "bytes": 2975,
+      "sha256": "a3554cc4103e02d9341cfa3b61c3f7aca154f26dfc853986c0c09cfff60252fa"
+    },
+    {
       "path": "android/app/src/test/java/org/wenji/study/StorageChunksTest.kt",
       "bytes": 721,
       "sha256": "fa500b3c31b48ee280a49f52afb0b9926949ec6e0ccad860e8c6a0cba09d6c0a"
     },
     {
       "path": "android/app/src/test/java/org/wenji/study/SyncRefreshTest.kt",
-      "bytes": 3897,
-      "sha256": "74d6aa84b2d2c125c5e963f2b407896107ca63d0ae96619ee5de5bf6aca92839"
+      "bytes": 4150,
+      "sha256": "3b6da9e6c995866bac44e7f2c11b14ca27d2c6e1bde4ac4d68f4461899011bf4"
     },
     {
       "path": "android/build-local.ps1",
@@ -129,8 +204,8 @@
     },
     {
       "path": "android/build.gradle.kts",
-      "bytes": 287,
-      "sha256": "1384a5c8f963fdabe04b3337d5f3e1a69265702d374d2558e485f86035ee1a4f"
+      "bytes": 344,
+      "sha256": "830f5764242f00bf38d3b63a7b7dd0e076d2bb3b6781d588ef932c98ee5e5665"
     },
     {
       "path": "android/gradle.properties",
@@ -159,8 +234,8 @@
     },
     {
       "path": "android/install-debug.ps1",
-      "bytes": 1662,
-      "sha256": "1aaec06c23a694f53a27248f7f24bb936bb3dae067da6a50910c03e500b752aa"
+      "bytes": 1610,
+      "sha256": "204b692558014928d524fb6d86a38fcb673fceac0cea0e7a3a229cd7ffe1e50f"
     },
     {
       "path": "android/settings.gradle.kts",
@@ -204,8 +279,8 @@
     },
     {
       "path": "scripts/connect_mumu.ps1",
-      "bytes": 1951,
-      "sha256": "08224428aa6da75947a08853c33371b3f767f0952b3cf138682f613e4d9e2eff"
+      "bytes": 884,
+      "sha256": "bd919731679dba761e1c6051913c7b2e4c4dd29d222edf33be5f3637614f57c6"
     },
     {
       "path": "scripts/http_smoke.py",
@@ -253,9 +328,14 @@
       "sha256": "ba0d356d052f007979114ced70a48bb3dee528c1eee7b23a2d870b4ff1c9beaf"
     },
     {
+      "path": "server/mobile_bridge.py",
+      "bytes": 7063,
+      "sha256": "daa3d977892a2ae7f55cae85a4bf38851b70d5b8646f2614f0f0f442bb79354d"
+    },
+    {
       "path": "server/model_gateway.py",
-      "bytes": 25117,
-      "sha256": "67d516bc6fca09321ea14895aad5c88ce26767d37a135df61d013ddccd425ce1"
+      "bytes": 26054,
+      "sha256": "bfd8fc9127d0ab0f1713a6c195f77cb7e84cf8a628a248150323b572ec2816af"
     },
     {
       "path": "server/provider.py",
@@ -281,6 +361,11 @@
       "path": "tests/test_input_validation.py",
       "bytes": 3909,
       "sha256": "fd0eb6c3af4489f4a0e094db0b47e696600074f2301bba6416aa2f15aa4ec6bf"
+    },
+    {
+      "path": "tests/test_mobile_bridge.py",
+      "bytes": 12868,
+      "sha256": "3b171b85519abba16e849d9afe3a73fa70abf59bb6bbdd473acf466d84cb33c9"
     },
     {
       "path": "tests/test_model_domain.py",

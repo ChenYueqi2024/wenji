@@ -1,6 +1,6 @@
 package org.wenji.study
 
-/** Public server configuration only. Credentials never enter Android state or storage. */
+/** Display-only configuration. Secret material is isolated in the encrypted phone settings store. */
 internal data class ModelInfo(
     val mode: String = "unknown",
     val protocol: String = "",
@@ -17,8 +17,8 @@ internal data class ModelInfo(
     }
     val displayLabel: String get() = label.ifBlank { badge }
     val description: String get() = when (mode) {
-        "demo" -> "当前使用合成教学材料中的死锁案例与固定摘录规则，未调用大模型。此模式的解释请求只在本机服务处理，不发送给模型供应商。"
-        "llm" -> "本机服务已配置模型；配置不代表连接或调用已验证。每次查找依据前都会单独确认，确认后仅发送本次问题及检索出的课程资料片段（含来源定位），不会上传整份 PDF。"
+        "demo" -> "当前使用合成教学材料中的死锁案例与固定摘录规则，未调用大模型。此模式在手机本地处理，不需要电脑或网络。"
+        "llm" -> "手机已配置模型；配置不代表连接或调用已验证。每次查找依据前都会单独确认，确认后手机联网发送本次问题及检索出的课程资料片段（含来源定位），不会上传整份 PDF。"
         else -> "尚未取得可核对的服务配置。请同步后查看解释模式与数据发送范围。"
     }
     fun statusSummary(fresh: Boolean): String = if (!fresh) "缓存配置 · 待同步核验" else when (mode) {

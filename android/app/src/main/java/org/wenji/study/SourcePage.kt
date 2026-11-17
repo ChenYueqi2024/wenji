@@ -57,6 +57,13 @@ import org.json.JSONObject
         }
     }
     PageHeading("课程资料","让每一次解释，都能回到原始依据。",model,wide)
+    if (model.state.objects("sources").none { !it.optBoolean("deleted") }) {
+        WhiteCard {
+            Text("先用一份合成教材体验",style=MaterialTheme.typography.titleMedium)
+            Text("内置两页资源分配图材料，供演示引用、反例和复习。手机离线即可导入，不是真实课堂采样。",style=MaterialTheme.typography.bodySmall,color=WenjiColors.Muted)
+            PrimaryAction("导入内置合成教材",model::importDemoMaterial,model.canWrite(),Glyph.Book)
+        }
+    }
     WhiteCard {
         Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(16.dp)) {
             Surface(color=WenjiColors.TealSoft,shape=RoundedCornerShape(16.dp),modifier=Modifier.size(56.dp)) { Box(contentAlignment=Alignment.Center){LineIcon(Glyph.File,Modifier.size(27.dp),WenjiColors.Teal)} }

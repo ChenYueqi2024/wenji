@@ -1,60 +1,97 @@
-问迹 0.3：可配置模型接入
+问迹 0.4：手机独立运行与可选模型接入
 
-能力边界
-本版实现四种文本生成HTTP协议适配器：openai_chat、openai_responses、anthropic_messages、gemini_generate_content。
-可自行配置API根地址、模型名、环境变量密钥、多个档案及额外请求头，不绑定特定服务商。
-“多供应商”不等于所有厂商API天然相同：服务须兼容所选协议；私有签名、特殊请求/响应、工具专用接口、流式专用服务需要新增适配器。当前不自动探测协议或模型列表，不支持多模态/工具调用。
-2026-11-17已使用本机私有凭证完成一个Chat Completions兼容端点的两条合成教学用例：有依据时生成带引用解释，资料不足时保留疑问。也检查了同请求ID不重复调用、来源修订使结果失效。其他协议仍仅完成本机模拟验证；这不是语义准确率或学习效果评测。默认仍是固定案例演示，私有端点和凭证不随源码交付。
+先分清两件事
+0.4 APK 在手机内运行资料处理、词项检索、引用校验、学习记录和固定案例规则。无需电脑服务、Python 安装或 ADB 端口转发。
+通用 AI 解释仍由用户配置的远程模型服务提供，需要可用网络与个人 API Key；安装包没有内置通用大模型。
+APK 支持 Android 8.0（API 26）及以上、具有 64 位 arm64-v8a 或 x86_64 运行环境的设备。计划发布标记为 v0.4.0-preview，文件名 wenji-0.4.0-preview.apk；下载资产和最终验证状态以发布页为准。
 
-首次配置（在runtime目录；公开源码从仓库根目录执行）
-1. 复制 config/models.example.json 为 config/models.local.json。
-2. active_profile 选择已有档案，修改该档案的 protocol、base_url、model。base_url填写API根路径，不填写完整操作路径；不要带用户名、密码、查询参数或片段。
-3. api_key_env填写保存密钥的环境变量名，建议WENJI_MODEL_API_KEY。不要把真实API Key写入JSON、Android代码、截图、聊天或Git仓库；GitHub PAT不能用作模型API Key。
-4. 停止当前占用8765端口的旧服务，运行：
-   .\scripts\run_model_service.ps1
-   若环境变量尚未设置，脚本以隐藏输入提示API Key，仅传给这次服务进程；退出后清理脚本临时设置的变量。已有环境变量由用户自行维护。
-5. MuMu已安装新版APK时，建立 adb reverse tcp:8765 tcp:8765，打开应用同步。或运行 .\scripts\connect_mumu.ps1（会安装当前构建）。
-6. 导入获授权课程资料，记录问题并同步；点击查找依据，核对显示的API地址、模型名和本次问题，确认后调用。只有点击生成才调用模型，导入、同步或查看缓存不会自动生成。
+三步离线体验
+1. 在手机安装 APK 并打开问迹，保持默认规则演示模式。
+2. 在资料页点击“导入内置合成教材”，导入 APK 自带的两页资源分配图 PDF；不需要下载资料。
+3. 记录“资源分配图有环，是否一定死锁？”，查找依据并核对原文、页码和版本；进入复习，先独立作答，再查看参考关键点与自评。
+默认规则仅覆盖这个合成教学案例，不提供通用问题的模型回答。文本或可复制文本 PDF 的导入、资料修订、撤回、查看引用与学习记录均在手机本地处理。
 
-可以直接设置环境变量并使用：
-   .\scripts\run_service.ps1 -ModelConfig .\config\models.local.json
-恢复固定案例模式：停止模型服务后运行 .\scripts\run_service.ps1（不指定ModelConfig）。修改配置后必须重启服务并在Android同步，不热重载。
+在应用内配置模型
+1. 打开“手机模型设置”，选择下列四种协议之一。
+2. 填写 API 基址与模型名称。基址是 API 根路径，不是完整操作路径；不得包含用户名、密码、查询参数或片段。远程地址必须使用 HTTPS。
+3. 输入个人模型 API Key，设置最大输出 Token（默认 2048，范围 1 至 16384；模型自身可能有更小上限），然后保存。
+4. 保存只验证和记录配置，不发送模型请求，也不证明端点已连通。查找依据时，核对显示的端点、模型和本次问题，单次确认后才调用。
+5. 同一 API 基址下，密钥留空可沿用已保存密钥；更换 API 基址必须重新输入密钥。重新打开设置不会回填密钥。
+手机设置目前只提供协议、API 基址、模型名、密钥及输出上限。多个档案、额外请求头和协议兼容开关属于下方的电脑开发配置，不会自动同步到手机。
 
 协议与根路径
-openai_chat：根路径后追加 /chat/completions；常见OpenAI兼容网关或本机兼容服务。
-openai_responses：根路径后追加 /responses；须支持Responses文本输出结构。
-anthropic_messages：根路径后追加 /messages；使用明确的anthropic-version，详见源码与官方版本说明。
-gemini_generate_content：根路径后追加 /models/{模型名}:generateContent；model填写裸模型ID，不加models/前缀。
-本机无需认证的服务：auth_mode="none"、不配置api_key_env，仅允许localhost/127.0.0.1/::1；非回环地址必须HTTPS并配置密钥。
-额外普通头可用extra_headers对象；额外敏感头值可引用 {"env":"WENJI_VENDOR_HEADER_KEY"}，由用户预先设置。传输/认证保留头不允许通过extra_headers覆盖。
-auth_header可选择bearer、x-api-key、api-key、x-goog-api-key；默认Gemini使用x-goog-api-key，其余使用Bearer。仅在供应商协议明确要求时调整，不能与auth_mode="none"混用。
-openai_chat的compatibility可配置chat_token_parameter（默认max_tokens，可改max_completion_tokens）、json_mode（默认true，不支持response_format的端点可设false，仍须返回约定JSON）、send_store（默认false，表示省略store字段；true表示显式发送store:false）。这些参数只控制协议兼容性，不会开启对话存储。
-Anthropic固定2026-10-21协议版本，使用该版本官方Bearer认证；该版本不再接收temperature，因此配置此参数会被拒绝。旧版兼容中转需要实现对应适配器，不能仅靠改域名假设通用。
-HTTP传输为直接连接，不自动使用系统代理、不跟随重定向、不自动重试；如服务在当前网络不可达，应使用可达的合规端点或本地协议兼容网关。
+openai_chat：根路径后追加 /chat/completions；适用于兼容该文本生成结构的服务。
+openai_responses：根路径后追加 /responses；须支持 Responses 文本输出结构。
+anthropic_messages：根路径后追加 /messages；固定 anthropic-version 为 2026-10-21，使用该版本支持的 Bearer 认证。
+gemini_generate_content：根路径后追加 /models/{模型名}:generateContent；model 填写裸模型 ID，不加 models/ 前缀；使用 x-goog-api-key 请求头。
+协议适配不等于任意供应商 API 都兼容。专有签名、特殊请求或响应、工具专用接口、流式专用服务需要新增适配器。当前不自动发现模型列表，不支持多模态或工具调用。
+手机的 HTTP 地址仅允许 localhost/127.0.0.1/::1，指向手机自身，不是电脑。普通远程模型应使用供应商提供的 HTTPS 基址。
 
-生成范围与校验
-模型只得到本次问题和词项检索命中的最多8个片段，合计最多12000字符；片段可能包含文中敏感内容，发送前须确认使用权与供应商。整份原PDF和学习记录不随请求上传。
-片段ID由服务端生成；模型不能指定来源路径、版本、页码或偏移。返回JSON只能含status、claims和missing_information，结论须引用本次已有ID。
-JSON、引用归属与原文/偏移/版本校验均通过才保存。引用正确定位不证明结论被原文语义支持，仍需人工核对。
-无词项候选时直接保留待补材料，不发送模型请求。资料不足或冲突时不生成正常自测卡；不会把学生标为已掌握。
-模型生成时不持有数据库锁；返回时再次检查问题、课程资料快照和配置是否变化，变化则丢弃结果。模型使用过的课程资料上下文变化会保守地将整条解释与卡片标为待复核；撤回会清理本机派生文本，不代表撤回供应商已收到的内容。
+密钥、记录与升级
+个人密钥由 Android Keystore 支持的 AES/GCM 加密，保存在应用私有存储。配置内容也参与加密认证；读取设置或配置引擎时，密钥会解密到进程内存，不进入公开状态、Room 学习缓存或源码。真实个人密钥不包含在 APK 中。
+“清除密钥并使用规则演示”会移除手机保存的配置与加密密钥，保留学习资料。保存的配置损坏或无法解密时不会静默切换演示；先显式清除，再重新配置。
+升级到 0.4 后使用新的手机学习空间。电脑上的资料和旧手机 Room 数据仍保留，不自动迁移，也不会重放旧电脑版待发送请求。需要的资料可以重新导入；旧学习记录目前没有自动迁移入口。手机模型设置需重新填写，不读取电脑私有配置或环境变量。
+手机 SQLite 保存资料、解释、引用与学习记录，新的 Room 数据库保存待处理操作和缓存。暂无账户或跨设备同步。
 
-失败、重试与费用
-发出前持久保留request_id。相同请求ID重复同步只取既有结果或原失败，不再次调用供应商。
-超时、认证失败、限流、格式不合法或应用服务中断后，先同步查看；需要重新生成时，在连接与模型说明中“停止重试并核对状态”，再重新查找并确认。新请求可能再次计费。
-不自动切换到规则答案冒充模型成功。错误响应不回显上游正文、请求头、密钥或本机文件路径。
-timeout_seconds默认30，配置范围大于0且不超过60；它约束连接/读超时及正文读取截止检查，不是DNS/慢响应头等所有阶段严格总时长保证。Android解释读取等待75秒；超时后按上述流程核对。
-max_output_tokens控制输出上限，不是精确费用预算。配置档案和模型各自可能有不同参数限制，以所选服务官方文档为准。
-可配置generation.max_output_tokens（默认2048，1至16384）与generation.temperature（可选0至1，Anthropic当前版本禁用）；模型本身可能有更小的上限。
+发送范围与结果校验
+模型只得到本次问题和词项检索命中的最多 8 个片段，合计最多 12000 字符；片段可能包含资料中的敏感内容，发送前须核对使用权、供应商与发送范围。原 PDF 文件和个人学习记录不随生成请求上传。
+片段 ID 由手机内置引擎生成；模型不能指定来源路径、版本、页码或偏移。返回 JSON 只能含 status、claims 和 missing_information，结论须引用本次已有 ID。
+JSON、引用归属及原文位置和版本校验均通过才保存。引用定位正确不证明结论得到原文的语义支持，仍需人工核对。
+没有词项候选时直接保留待补材料，不发送模型请求。资料不足或冲突时不生成正常自测卡，不会将学生自动标记为已掌握。
+生成期间不持有数据库锁；返回时再次检查问题、资料快照和配置，变化则丢弃结果。模型使用过的课程资料变化会保守地使整条解释与卡片进入待复核。撤回清理本机派生文本，无法撤回供应商已收到的内容。
 
-已检查的API协议资料（2026-11-16）
+中断、重试与费用
+刷新与应用重启不会自动重发任何待处理的解释请求。待处理记录会保留，同时读取本机最新状态。
+发送模型请求前，引擎持久保留 request_id；已发送的同一请求不会通过重复请求再次调用供应商。
+超时、认证失败、限流、格式不合法或应用中断后，先刷新检查是否已有结果。需要重新生成时，先“停止重试并核对状态”，再重新查找依据并单次确认。停止重试不会撤销已经生效的结果，也不能取消供应商已收到的调用；新请求可能再次计费。
+错误响应不回显上游正文、请求头、密钥或本机文件路径。配置或模型失败不会以规则答案冒充模型成功。
+手机配置的 timeout_seconds 为 60。它约束连接/读超时和正文读取截止检查，不保证 DNS、慢响应头等所有阶段的严格总时长。最大输出 Token 控制输出上限，不是精确费用预算。
+HTTP 传输直接连接，不自动使用系统代理、不跟随重定向、不自动重试；需要端点在手机当前网络可达。
+
+开发者：手机打包与当前验证范围
+手机使用 Chaquopy 17.2.0 将 Python 3.12 运行时、筛选后的领域模块、pypdf 6.21.4 和合成教材打包到 APK。Kotlin 直接调用 server.mobile_bridge.MobileEngine，不启动 HTTP 服务。双 64 位 ABI 和运行库会增加包体，具体大小以最终发布资产为准。
+构建需要 JDK 17、Android SDK 35、Build Tools 35.0.0、Gradle 8.11.1 与 Python 3.12；首次构建需下载依赖。Python 不在 PATH 时，可设置 WENJI_BUILD_PYTHON 为 Python 3.12 可执行文件的绝对路径。安装 APK 的用户不需要上述工具。
+Chaquopy 官方说明：https://chaquo.com/chaquopy/doc/current/android.html
+当前通过 67 项 Python 测试，其中 11 项覆盖手机进程内桥接：离线完整流程、PDF 页码、配置切换、密钥注入、单次确认和中断保留请求。测试使用临时数据库和合成凭证；桥接测试禁止 socket，协议测试使用本机模拟服务。
+0.4 Android APK 构建与26项JVM测试通过；去掉电脑端口转发后，MuMu通过4项AndroidX设备测试，包括禁止网络的PDF/学习持久化、Keystore加密与篡改拒绝，以及完全位于手机内部的模拟Chat接口确认/去重/引用失效。Lint为0错误、9项提示（8项固定依赖有新版，1项有意同步提交加密配置的性能建议）。这些不代表实体手机或真实外部模型调用已验证。Windows锁屏暂时阻止新版界面视觉检查，当前公开0.3/0.2截图仍为历史记录。
+2026-11-17 曾在 0.3 电脑服务上完成一个 Chat Completions 兼容端点的两次真实合成用例调用，分别检查有依据解释与资料不足。同请求 ID 未重复调用，来源修订使结果失效。这是电脑服务的有限联调，不是 0.4 手机端验证，不代表通用语义准确率或学习成效；其他协议仅经本机模拟验证。私有端点与凭证不随源码交付。
+
+开发者可选：电脑服务与高级 JSON 配置
+以下路径继续可用，但与 0.4 手机运行相互独立，不是安装或使用 APK 的前提。电脑服务使用自己的 data/wenji.sqlite3；修改它不会更改手机资料或手机模型设置。
+在 runtime 目录执行（公开源码从仓库根目录执行）：
+1. 复制 config/models.example.json 为 config/models.local.json。
+2. 用 active_profile 选择档案，填写 protocol、base_url、model。
+3. api_key_env 填写密钥的环境变量名，例如 WENJI_MODEL_API_KEY。真实密钥不写入 JSON、源码、截图或 Git；GitHub PAT 不能充当模型 API Key。
+4. 停止旧的 8765 端口服务后运行：
+   .\scripts\run_model_service.ps1
+   若环境变量尚未设置，脚本以隐藏输入提示密钥，仅传给这次服务进程；退出后清理脚本临时设置的变量。
+也可以先设置环境变量再运行：
+   .\scripts\run_service.ps1 -ModelConfig .\config\models.local.json
+恢复电脑规则模式：停止服务后运行 .\scripts\run_service.ps1，不指定 ModelConfig。电脑配置修改后需要重启该服务；手机内设置保存后在进程内生效。
+电脑服务仅监听 127.0.0.1:8765，可用于开发与协议检查。0.4 APK 不连接该端口，不需要 ADB reverse。
+
+电脑高级参数
+auth_mode="none" 可用于无需认证的回环服务，不能配置 api_key_env，仅允许 localhost/127.0.0.1/::1；非回环地址必须 HTTPS 并配置密钥。
+extra_headers 支持普通请求头；敏感头值使用 {"env":"WENJI_VENDOR_HEADER_KEY"} 引用用户预先设置的环境变量。传输或认证保留头不允许通过 extra_headers 覆盖。
+auth_header 可选 bearer、x-api-key、api-key、x-goog-api-key；默认 Gemini 使用 x-goog-api-key，其余使用 Bearer。不能与 auth_mode="none" 混用。
+openai_chat 的 compatibility 支持 chat_token_parameter（max_tokens 或 max_completion_tokens）、json_mode（默认 true）、send_store（默认 false，省略 store 字段；true 表示发送 store:false）。这些开关控制协议兼容性，不会开启对话存储；即使关闭 JSON 模式，响应仍须通过约定结构校验。
+generation.max_output_tokens 默认 2048，范围 1 至 16384；temperature 可选 0 至 1，但固定的 Anthropic 2026-10-21 版本不接收它，配置后会被拒绝。
+timeout_seconds 默认 30，范围大于 0 且不超过 60，具有与手机相同的超时边界。供应商可能限制参数组合，以其官方文档为准。
+
+检查与第三方许可
+不耗模型额度的自动化检查：
+   .\scripts\test.ps1
+测试中的回环模拟 HTTP 需要本机网络权限；环境禁止 localhost 连接时，应在允许它的终端复验，不得把模拟结果写成真实供应商连接成功。
+Chaquopy 采用 MIT 许可证，pypdf 采用 BSD-3-Clause；Python 运行时、Android 依赖和 Gradle wrapper 适用各自许可，分发时须保留相应声明。
+Chaquopy 许可：https://github.com/chaquo/chaquopy/blob/master/LICENSE.txt
+pypdf 许可：https://github.com/py-pdf/pypdf/blob/main/LICENSE
+问迹项目本身尚未指定开源许可证；第三方许可不替代本项目许可。
+
+已检查的协议资料（2026-11-16；Anthropic 认证说明于 2026-11-17 复核）
 https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create
 https://developers.openai.com/api/reference/resources/responses/methods/create
 https://platform.claude.com/docs/en/api/messages/create
 https://platform.claude.com/docs/en/api/versioning
+https://platform.claude.com/docs/en/manage-claude/authentication
 https://ai.google.dev/api
 https://aistudio.google.com/api-reference/generate-content/generate-content
-
-可运行验证（不耗模型额度）
-   .\scripts\test.ps1
-测试使用临时数据库、受控模拟输出或本机HTTP响应；不得据此宣称某家服务真实连接成功、语义准确率、学习效果或生产安全达标。

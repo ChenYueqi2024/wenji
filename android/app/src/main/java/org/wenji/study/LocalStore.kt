@@ -31,6 +31,7 @@ interface LocalDao {
 abstract class LocalStore : RoomDatabase() {
     abstract fun dao(): LocalDao
     companion object {
-        fun create(context: Context) = Room.databaseBuilder(context, LocalStore::class.java, "wenji.db").build()
+        // Keep the old desktop outbox/cache intact, and never replay its IDs into the phone database.
+        fun create(context: Context) = Room.databaseBuilder(context, LocalStore::class.java, "wenji-phone.db").build()
     }
 }

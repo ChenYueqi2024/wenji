@@ -7,6 +7,11 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class SyncRefreshTest {
+    @Test fun explanationIsNeverAutomaticallySentDuringRefreshOrRestart() {
+        assertFalse(mayAutoRetry("/questions/question-1/explain"))
+        assertTrue(mayAutoRetry("/sources"))
+        assertTrue(mayAutoRetry("/cards/card-1/attempts"))
+    }
     @Test fun successfulSyncFetchesAndCachesStateAfterPendingWork() = runBlocking {
         val events = mutableListOf<String>()
         val failure = syncPendingAndRefresh(

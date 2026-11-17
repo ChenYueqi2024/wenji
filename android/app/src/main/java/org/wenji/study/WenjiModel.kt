@@ -10,14 +10,17 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.UUID
 
 data class FailureNotice(val sequence: Long, val summary: String)
 internal data class ExplainConsent(val questionId: String, val question: String, val questionRevision: Int, val provider: ModelInfo, val done: () -> Unit)
 class WenjiModel(app: Application) : AndroidViewModel(app) {
     private val db = LocalStore.create(app)
+    private val settings = StandaloneSettings(app)
+    private var engine: PhoneEngine? = null
+    internal val hasDesktopRecords = app.getDatabasePath("wenji.db").exists()
+    internal var settingsForm by mutableStateOf<ModelSettingsForm?>(null); private set
+    internal var settingsError by mutableStateOf<String?>(null); private set
     internal val editors = EditorSession()
     private var failureSequence = 0L
     var failure by mutableStateOf<FailureNotice?>(null); private set
@@ -50,21 +53,64 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
             reportFailure("本地记录读取失败，请保留应用数据以便排查。", "本地记录读取失败：${e.message}。请保留应用数据以便排查。")
         }
     }
+    private fun localEngine(): PhoneEngine {
+        engine?.let { return it }
+        val profile = settings.load()
+        val candidate = PhoneEngine.get(getApplication(), profile.configJson, profile.secretsJson)
+        // Reapply persisted settings if a previous save/rollback failed in this process.
+        candidate.configure(profile.configJson, profile.secretsJson)
+        engine = candidate
+        return candidate
+    }
     private suspend fun request(path: String, body: JSONObject? = null): JSONObject = withContext(Dispatchers.IO) {
-        val c = URL("http://127.0.0.1:8765$path").openConnection() as HttpURLConnection
+        localEngine().request(path, body)
+    }
+    fun openSettings() = operation {
+        settingsError = null
+        settingsForm = try { withContext(Dispatchers.IO) { settings.loadForm() } }
+        catch (_: Exception) {
+            settingsError = "保存的模型配置无法读取。请先清除配置恢复规则演示，再重新填写；学习资料仍保留。"
+            ModelSettingsForm()
+        }
+    }
+    fun closeSettings() { if (!busy) { settingsForm = null; settingsError = null } }
+    internal fun saveSettings(form: ModelSettingsForm) = operation {
         try {
-            c.connectTimeout = 4000; c.readTimeout = if (path.endsWith("/explain")) 75000 else 12000
-            if (body != null) {
-                c.requestMethod = "POST"; c.doOutput = true
-                c.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                c.outputStream.use { it.write(body.toString().toByteArray(Charsets.UTF_8)) }
+            val newState = withContext(Dispatchers.IO) {
+                val previous = settings.load()
+                val prepared = settings.prepare(form)
+                val current = localEngine()
+                val response = current.configure(prepared.configJson, prepared.secretsJson)
+                try { settings.save(prepared) }
+                catch (failure: Exception) {
+                    engine = null
+                    try { current.configure(previous.configJson, previous.secretsJson) } catch (_: Exception) { }
+                    throw IllegalStateException("模型配置未能安全保存，请重试。")
+                }
+                response.getJSONObject("state")
             }
-            val status = c.responseCode
-            val data = (if (status in 200..299) c.inputStream else c.errorStream)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }.orEmpty()
-            val json = if (data.isEmpty()) JSONObject() else JSONObject(data)
-            if (status !in 200..299) throw ApiFailure(status, json.optJSONObject("error")?.optString("message") ?: "HTTP $status")
-            json
-        } finally { c.disconnect() }
+            cache(newState); connected = true; explainConsent = null
+            settingsForm = null; settingsError = null
+            message = "模型配置已保存到手机；尚未调用模型，生成前仍需单次确认"
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
+            providerInfoFresh = false
+            settingsError = if (e is IllegalArgumentException || e is ApiFailure || e is IllegalStateException) e.message else "模型配置未能安全保存，请检查输入后重试。"
+        }
+    }
+    fun useDemo() = operation {
+        val newState = withContext(Dispatchers.IO) {
+            val current = PhoneEngine.get(getApplication())
+            val response = current.configure(null, "{}")
+            try { settings.clear() } catch (_: Exception) {
+                engine = null
+                throw IllegalStateException("模型配置未能清除，请重试。")
+            }
+            engine = current
+            response.getJSONObject("state")
+        }
+        cache(newState); connected = true; explainConsent = null; settingsForm = null; settingsError = null
+        message = "已清除手机模型配置，使用本地规则演示；学习资料保留"
     }
     private suspend fun cache(json: JSONObject) {
         val at = System.currentTimeMillis()
@@ -95,7 +141,7 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
                     else -> {
                         connected = false
                         providerInfoFresh = false
-                        reportFailure("操作失败，已保存内容仍保留。请检查连接并重试。", "操作失败：${e.message ?: "未知错误"}。已保存的疑问与缓存仍保留。")
+                        reportFailure("操作失败，已保存内容仍保留。请刷新或检查手机模型设置。")
                     }
                 }
             } finally { busy = false; loadLocal() }
@@ -110,9 +156,14 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
         if (failure?.sequence == sequence) failure = null
     }
     fun refresh() = operation {
+        var explanationNeedsReview = false
         val pendingFailure = syncPendingAndRefresh(
             syncPending = {
-                for (write in db.dao().writes()) sendWrite(write)
+                for (write in db.dao().writes()) {
+                    if (!mayAutoRetry(write.path)) { explanationNeedsReview = true; break }
+                    sendWrite(write)
+                }
+                if (explanationNeedsReview) return@syncPendingAndRefresh
                 for (q in db.dao().pending()) {
                     val res = request("/questions", JSONObject().put("request_id", q.requestId).put("text", q.text))
                     val newState = res.getJSONObject("state")
@@ -127,8 +178,10 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
                 connected = true
             }
         )
-        if (pendingFailure == null) {
-            message = "已同步 · ${providerInfo.statusSummary(providerConfigurationFresh)}"
+        if (explanationNeedsReview) {
+            reportFailure("已更新本机状态；上次解释请求仍待核对。请在本机与模型说明中停止旧重试，核对结果后再决定是否重新生成。")
+        } else if (pendingFailure == null) {
+            message = "本机记录已更新 · ${providerInfo.statusSummary(providerConfigurationFresh)}"
         } else {
             reportFailure("已更新状态，待同步内容仍保留：${pendingFailure.message}。请检查待同步列表。")
         }
@@ -137,7 +190,15 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
         require(text.isNotBlank()) { "疑问不能为空" }
         require(text.length <= 2000) { "疑问最多2000字符，请拆分记录" }
         db.dao().insert(PendingQuestion(UUID.randomUUID().toString(), text.trim(), System.currentTimeMillis()))
-        message = "疑问已写入本地；点击同步后送往本机服务"; saved()
+        message = "疑问已写入本地"; saved()
+        // This only saves questions to the embedded engine; never replay a pending model call here.
+        for (q in db.dao().pending()) {
+            val res = request("/questions", JSONObject().put("request_id", q.requestId).put("text", q.text))
+            val newState = res.getJSONObject("state")
+            db.withTransaction { persistCache(newState, System.currentTimeMillis()); db.dao().removePending(q.requestId) }
+        }
+        cache(request("/state?course_id=os-default")); connected = true
+        message = "疑问已写入本地；不需要网络或电脑"
     }
     fun removePendingQuestion(id: String) = operation { db.dao().removePending(id); message = "已移除本机待同步疑问" }
     fun search(query: String) = operation {
@@ -177,7 +238,22 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
         if (path.endsWith("/explain")) { reportFailure("请从查找依据入口确认本次请求。"); return }
         submitMutation(path, body, done)
     }
+    fun importDemoMaterial() = operation {
+        val title = "合成教材：资源分配图与死锁"
+        if (state.objects("sources").any { it.optString("title") == title && !it.optBoolean("deleted") }) {
+            message = "合成教材已在资料列表中，可记录演示疑问并查找依据"
+            return@operation
+        }
+        val bytes = withContext(Dispatchers.IO) {
+            getApplication<Application>().assets.open("fixtures/resource_graph_v1.pdf").use { it.readBytes() }
+        }
+        performMutation("/sources", JSONObject().put("title", title)
+            .put("pdf_base64", android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)))
+    }
     private fun submitMutation(path: String, body: JSONObject = JSONObject(), done: () -> Unit = {}) = operation {
+        performMutation(path, body, done)
+    }
+    private suspend fun performMutation(path: String, body: JSONObject, done: () -> Unit = {}) {
         check(db.dao().writes().isEmpty()) { "已有待同步操作，请先同步或撤销本地重试" }
         val id = UUID.randomUUID().toString()
         body.put("request_id", id).put("course_id", "os-default")

@@ -53,7 +53,7 @@ class ProviderError(Exception):
 
 
 def _invalid_config():
-    return ProviderError("provider_config_invalid", "模型配置无效，请检查本地配置文件和环境变量。", 400)
+    return ProviderError("provider_config_invalid", "模型配置无效，请检查模型参数和密钥设置。", 400)
 
 
 def _invalid_output():
@@ -91,7 +91,10 @@ def _header_value(value):
     return isinstance(value, str) and 0 < len(value) <= 8192 and all(32 <= ord(c) <= 126 for c in value)
 
 
-def _validate_profile(profile):
+def _validate_profile(profile, environ=None):
+    # Mobile callers inject secrets from Android Keystore-backed storage. Never
+    # mutate process-wide environment variables or silently fall back to them.
+    environ = os.environ if environ is None else environ
     allowed = {"protocol", "base_url", "model", "api_key_env", "auth_mode", "label",
                "extra_headers", "generation", "timeout_seconds", "compatibility", "auth_header"}
     if not isinstance(profile, dict) or set(profile) - allowed:
@@ -130,9 +133,9 @@ def _validate_profile(profile):
     elif auth_mode == "api_key":
         if not isinstance(api_key_env, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,127}", api_key_env):
             raise _invalid_config()
-        secret = os.environ.get(api_key_env, "")
+        secret = environ.get(api_key_env, "")
         if not _header_value(secret) or secret.strip() != secret:
-            raise ProviderError("provider_key_missing", "模型密钥环境变量未设置或格式无效。", 400)
+            raise ProviderError("provider_key_missing", "模型密钥未设置或格式无效。", 400)
     else:
         raise _invalid_config()
     timeout = profile.get("timeout_seconds", 30)
@@ -180,7 +183,7 @@ def _validate_profile(profile):
                     or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]{0,127}", value["env"])):
                 raise _invalid_config()
             header_envs[name.lower()] = value["env"]
-            value = os.environ.get(value["env"], "")
+            value = environ.get(value["env"], "")
         if (not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9-]{1,80}", name)
                 or name.lower() in blocked or name.lower() in normalized_headers or not _header_value(value)):
             raise _invalid_config()
@@ -206,15 +209,34 @@ def load_provider(config_path=None):
         if len(raw) > 65536:
             raise ValueError("oversize config")
         data = _strict_json(raw.decode("utf-8-sig"))
-        if isinstance(data, dict) and ("profiles" in data or "active_profile" in data):
-            if set(data) != {"profiles", "active_profile"}:
+        if data is None:
+            raise _invalid_config()
+        return load_provider_config(data)
+    except ProviderError:
+        raise
+    except (OSError, ValueError, TypeError, RecursionError):
+        raise _invalid_config() from None
+
+
+def load_provider_config(profile, environ=None):
+    """Load an in-memory profile without files or changes to os.environ.
+
+    None explicitly selects demo. An explicitly provided secret mapping is the
+    only source of credentials, including custom header environment references.
+    File-based and embedded callers share the same validation and fingerprint.
+    """
+    if profile is None:
+        return ExtractiveDemoProvider()
+    try:
+        if isinstance(profile, dict) and ("profiles" in profile or "active_profile" in profile):
+            if set(profile) != {"profiles", "active_profile"}:
                 raise ValueError("invalid profile wrapper")
-            profiles, active = data["profiles"], data["active_profile"]
+            profiles, active = profile["profiles"], profile["active_profile"]
             if (not isinstance(profiles, dict) or not _text(active, 120) or active not in profiles
                     or not all(isinstance(p, dict) for p in profiles.values())):
                 raise ValueError("invalid selected profile")
-            data = profiles[active]
-        config, secret = _validate_profile(data)
+            profile = profiles[active]
+        config, secret = _validate_profile(profile, environ=environ)
     except ProviderError:
         raise
     except (OSError, ValueError, TypeError, RecursionError):

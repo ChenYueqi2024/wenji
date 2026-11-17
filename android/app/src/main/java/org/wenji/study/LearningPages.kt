@@ -38,7 +38,7 @@ import java.time.format.DateTimeFormatter
     SectionTitle("疑问记录","${questions.size+model.pending.size} 条")
     for(q in model.pending) key(q.requestId) {
         WhiteCard {
-            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) { Tag("已保存到本机",Tone.Teal);Text("等待同步",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall) }
+            Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) { Tag("已保存到本机",Tone.Teal);Text("等待处理，请刷新",color=WenjiColors.Muted,style=MaterialTheme.typography.bodySmall) }
             Text(q.text,style=MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                 TextButton(onClick={draft=q.text},enabled=!model.busy,contentPadding=PaddingValues(0.dp)) { Text("复制并修改") }

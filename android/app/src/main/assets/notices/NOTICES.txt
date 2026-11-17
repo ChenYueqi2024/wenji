@@ -1,0 +1,53 @@
+Wenji 0.4.0-preview - embedded Python runtime notices
+
+The files in this directory preserve upstream license texts verbatim. They
+describe third-party components and do not change this application's license.
+
+Chaquopy 17.2.0 (MIT)
+  File: Chaquopy-17.2.0-LICENSE.txt
+  Source: https://github.com/chaquo/chaquopy/tree/17.2.0
+  License: https://raw.githubusercontent.com/chaquo/chaquopy/17.2.0/LICENSE.txt
+
+CPython 3.12.15, supplied by Chaquopy target 3.12.15-0
+  Files: Python-3.12.15-LICENSE.txt
+         Python-3.12.15-incorporated-notices.txt
+  Source: https://github.com/python/cpython/tree/v3.12.15
+  License: https://raw.githubusercontent.com/python/cpython/v3.12.15/LICENSE
+  Incorporated-software notices (original reStructuredText preserved):
+    https://raw.githubusercontent.com/python/cpython/v3.12.15/Doc/license.rst
+  This application uses Chaquopy's prebuilt Android distribution; this project
+  has not modified the CPython interpreter source. Android integration is
+  provided by Chaquopy. The host Python used during building is separate from
+  the interpreter packaged in the APK.
+
+OpenSSL 3.5.9 (Apache License 2.0)
+  File: OpenSSL-3.5.9-LICENSE.txt
+  Source: https://github.com/openssl/openssl/tree/openssl-3.5.9
+  License: https://raw.githubusercontent.com/openssl/openssl/openssl-3.5.9/LICENSE.txt
+  Version identified in packaged libcrypto_python.so: OpenSSL 3.5.9 29 Sep 2026.
+  libcrypto_chaquopy.so and libssl_chaquopy.so link to the corresponding Python
+  distribution libraries. This project has not modified their source.
+
+certifi 2026.10.23 certificate bundle (Mozilla Public License 2.0 notice)
+  File: certifi-2026.10.23-LICENSE.txt
+  Source: https://github.com/certifi/python-certifi/tree/2026.10.23
+  License: https://raw.githubusercontent.com/certifi/python-certifi/2026.10.23/LICENSE
+  MPL 2.0 text: https://www.mozilla.org/MPL/2.0/
+  Source certificate bundle:
+    https://github.com/certifi/python-certifi/blob/2026.10.23/certifi/cacert.pem
+  Chaquopy 17.2 documents this certifi version for its packaged cacert.pem.
+
+pypdf 6.21.4 (BSD-3-Clause)
+  File: pypdf-6.21.4-LICENSE.txt
+  Source: https://github.com/py-pdf/pypdf/tree/6.21.4
+  License: https://raw.githubusercontent.com/py-pdf/pypdf/6.21.4/LICENSE
+  The package also retains its license in the Chaquopy requirements archive:
+    pypdf-6.21.4.dist-info/licenses/LICENSE
+
+Additional bundled notices retained in the Chaquopy bootstrap archive:
+  setuptools-68.2.2.dist-info/LICENSE
+  java/_vendor/pyelftools-0.26.dist-info/LICENSE.txt
+
+These notices supplement the original package metadata. This component list
+documents the embedded runtime reviewed for this build; it is not a claim of
+an exhaustive legal review of every Android or transitive dependency.
