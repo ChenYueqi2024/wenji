@@ -14,7 +14,6 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.UUID
 
-class ApiFailure(val status: Int, message: String) : Exception(message)
 data class FailureNotice(val sequence: Long, val summary: String)
 internal data class ExplainConsent(val questionId: String, val question: String, val questionRevision: Int, val provider: ModelInfo, val done: () -> Unit)
 class WenjiModel(app: Application) : AndroidViewModel(app) {
@@ -111,17 +110,28 @@ class WenjiModel(app: Application) : AndroidViewModel(app) {
         if (failure?.sequence == sequence) failure = null
     }
     fun refresh() = operation {
-        for (write in db.dao().writes()) sendWrite(write)
-        for (q in db.dao().pending()) {
-            val res = request("/questions", JSONObject().put("request_id", q.requestId).put("text", q.text))
-            val newState = res.getJSONObject("state")
-            db.withTransaction {
-                persistCache(newState, System.currentTimeMillis())
-                db.dao().removePending(q.requestId)
+        val pendingFailure = syncPendingAndRefresh(
+            syncPending = {
+                for (write in db.dao().writes()) sendWrite(write)
+                for (q in db.dao().pending()) {
+                    val res = request("/questions", JSONObject().put("request_id", q.requestId).put("text", q.text))
+                    val newState = res.getJSONObject("state")
+                    db.withTransaction {
+                        persistCache(newState, System.currentTimeMillis())
+                        db.dao().removePending(q.requestId)
+                    }
+                }
+            },
+            refreshState = {
+                cache(request("/state?course_id=os-default"))
+                connected = true
             }
+        )
+        if (pendingFailure == null) {
+            message = "已同步 · ${providerInfo.statusSummary(providerConfigurationFresh)}"
+        } else {
+            reportFailure("已更新状态，待同步内容仍保留：${pendingFailure.message}。请检查待同步列表。")
         }
-        cache(request("/state?course_id=os-default")); connected = true
-        message = "已同步 · ${providerInfo.statusSummary(providerConfigurationFresh)}"
     }
     fun saveQuestion(text: String, saved: () -> Unit) = operation {
         require(text.isNotBlank()) { "疑问不能为空" }

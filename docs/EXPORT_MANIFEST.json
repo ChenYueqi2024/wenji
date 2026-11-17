@@ -10,17 +10,17 @@
     "private contest and identity documents",
     "external delivery scripts"
   ],
-  "source_file_count": 54,
+  "source_file_count": 56,
   "source_files": [
     {
       "path": "MODEL_SETUP.txt",
-      "bytes": 6892,
-      "sha256": "dee4ec5818af486bb597010c6b1cf3f04b666cdd649b3644c999e0e8896a0447"
+      "bytes": 7130,
+      "sha256": "aff5d66d42d3b155df4ffb0ce29b0a63895cd36e72bf389de1a0452de0e8931d"
     },
     {
       "path": "android/app/build.gradle.kts",
       "bytes": 1290,
-      "sha256": "45a1c9e8478d59dbbe439f68a1e58d9f2e6e973f51c152e6ccb6bfb1d6b98602"
+      "sha256": "c93bd76c4a72db0f0adea1cc5271a379334a1b9ffb6a578812a7a91f6dc8294f"
     },
     {
       "path": "android/app/schemas/org.wenji.study.LocalStore/1.json",
@@ -68,9 +68,14 @@
       "sha256": "240a486311785e62d855cccebca22a3fe9a1691eb330afab2c6e10c56866de99"
     },
     {
+      "path": "android/app/src/main/java/org/wenji/study/SyncRefresh.kt",
+      "bytes": 568,
+      "sha256": "e38a3a2ff386f446f5c6aeaa64b296aab4747392d4cbe21c6efe6ed595923faf"
+    },
+    {
       "path": "android/app/src/main/java/org/wenji/study/WenjiModel.kt",
-      "bytes": 11815,
-      "sha256": "549e83d357b4a19e940f7b9acd737731e99cfdb3d6126d5a2f9c6b6233a33105"
+      "bytes": 12185,
+      "sha256": "e0155eca612f83838c79b1d3980bd67f4026c20f7d0d80769ec6392cf51386c1"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/WenjiUi.kt",
@@ -111,6 +116,11 @@
       "path": "android/app/src/test/java/org/wenji/study/StorageChunksTest.kt",
       "bytes": 721,
       "sha256": "fa500b3c31b48ee280a49f52afb0b9926949ec6e0ccad860e8c6a0cba09d6c0a"
+    },
+    {
+      "path": "android/app/src/test/java/org/wenji/study/SyncRefreshTest.kt",
+      "bytes": 3897,
+      "sha256": "74d6aa84b2d2c125c5e963f2b407896107ca63d0ae96619ee5de5bf6aca92839"
     },
     {
       "path": "android/build-local.ps1",

@@ -1,64 +1,85 @@
 # 问迹
 
-**0.3.0 开发预览源码** · Android 课堂疑问溯源与复习助手
+**把课堂上的一句“为什么”，连到有出处的解释和下一次独立作答。**
 
-把课堂疑问与课程资料中的原文、页码和版本连起来。先记录问题，再核对依据、独立作答和自评；资料修订或撤回后，相关解释与复习卡进入待复核状态。
+> 资源分配图有环，一定死锁吗？
+>
+> 答案里的关键条件，可能藏在讲义的某一句话里。等到几周后复习，依据还找得到吗？如果讲义改了，旧解释又该怎么办？
 
-这是单门课程、单设备、本机服务的开发预览。默认使用**固定合成案例规则**；0.3 增加 OpenAI Chat 兼容、Responses、Anthropic Messages、Gemini generateContent 四种可配置协议，可更换 API 根地址、模型名和密钥环境变量。已通过本机模拟协议测试，**尚未使用真实供应商凭证完成联调或语义效果评测**。词项检索与引用定位不代表语义支持或置信度，尚无账户认证。
+问迹是一款 **Android 课堂疑问溯源与复习助手**。从记下一条疑问开始，它把问题、资料原文、页码、版本和复习卡连起来：查到解释后先核对依据，复习时先自己回答；资料修订或撤回后，相关解释与卡片会进入待复核状态。
 
-配置与兼容参数见 [模型接入说明](MODEL_SETUP.txt) 和 [无密钥配置示例](config/models.example.json)。符合所选协议的服务可通过配置接入；专有签名、请求或响应格式需要新增适配器，不宣称任意 API 地址都能直接使用。
+**当前版本：0.3.1 开发预览** · Kotlin / Jetpack Compose · Python / SQLite
 
-## 运行界面
+[下载预览 APK](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.3.1-preview) · [模型接入说明](MODEL_SETUP.txt) · [验证记录](docs/VALIDATION.md) · [AI 协作说明](docs/AI_DEVELOPMENT.md)
 
-0.3 新增模型确认和引用展示，以下为 MuMu 实际运行截图。端点是本机模拟响应服务，标签明确标为“非真实模型”，没有调用外部供应商。
+> 当前面向单门课程、单设备、本机服务。APK 需要电脑上的 Python 服务和 ADB 端口转发；只安装 APK 不能体验完整功能。默认提供无需模型密钥的固定合成案例演示。
 
-<img src="docs/images/model-consent-portrait.png" width="270" alt="0.3竖屏单次请求确认"> <img src="docs/images/model-citation-portrait.png" width="270" alt="0.3本机模拟解释与引用">
+## 从一条疑问开始
 
-[横屏确认弹窗](docs/images/model-consent-wide.png) 也已检查。取消不会调用模拟服务，确认一次后生成一次，重新检索仍需重新确认；详细范围见 [验证记录](docs/VALIDATION.md)。
+| 你做的事 | 问迹接着做什么 |
+| --- | --- |
+| **课上记下来**：“有环就一定死锁吗？” | 在设备上保存疑问；离线也能记录，联网后再同步。 |
+| **把讲义放进来**：导入文字或可复制文本的 PDF | 在课程内检索候选片段，把引用连到原文、页码和资料版本。 |
+| **沿着出处看解释** | 默认展示固定案例；启用模型后，每次生成前确认端点、模型和问题，再核对生成结果的引用。 |
+| **合上解释，自己答一次** | 先独立作答，再查看参考关键点、自评并安排复习；不自动判题或标记“已掌握”。 |
+| **讲义改版了** | 相关解释和复习卡进入待复核，提醒你重新检查依据。 |
 
-以下为 0.2 界面的 MuMu Android 12 实际运行截图，使用合成教学材料；它们不作为 0.3 新增模型确认界面的验证证据。
+每次查看解释，都能继续追问：**“答案来自哪里，依据现在还有效吗？”**
 
-![横屏疑问页](docs/images/questions-wide.png)
+## 看看界面
 
-<img src="docs/images/questions-portrait.png" width="270" alt="竖屏疑问页"> <img src="docs/images/sources-portrait.png" width="270" alt="竖屏资料页"> <img src="docs/images/review-portrait.png" width="270" alt="竖屏复习页">
+### 生成前确认，生成后查原文
 
-界面变更见 [0.2 更新说明](docs/UI_CHANGES.md)，实际通过范围见 [验证记录](docs/VALIDATION.md)。
+以下是 **0.3.0 在 MuMu 中的实际运行截图**，展示单次请求确认与引用展开。使用合成教学材料和本机模拟响应，界面中的“非真实模型”标签保留；这些图片不是外部真实模型回答的截图。
 
-## 下载开发预览
+<img src="docs/images/model-consent-portrait.png" width="270" alt="0.3.0：生成前核对端点、模型与问题的确认弹窗"> <img src="docs/images/model-citation-portrait.png" width="270" alt="0.3.0：本机模拟回答及可展开的原文引用">
 
-[v0.3.0-preview 发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.3.0-preview) 提供包含新增模型确认流程的调试 APK。模型配置与密钥仍由用户在电脑上提供，默认使用规则演示。APK 需要电脑 Python 服务和 ADB 端口转发；仅安装 APK 不能获得完整在线功能。旧版 0.2 保留用于历史对照。
+[查看横屏确认弹窗](docs/images/model-consent-wide.png)。这轮检查中，取消没有调用模拟服务，确认后调用一次，再次生成需要重新确认。
 
-下载 `wenji-0.3.0-preview.apk` 后，可用 `adb -s <设备编号> install -r <APK路径>` 安装，再执行 `adb -s <设备编号> reverse tcp:8765 tcp:8765`。实体手机安装与软键盘体验仍待验证。发布页附 APK SHA256，源码构建方法如下。
+### 疑问、资料、复习，围绕同一条线索
 
-## 当前功能与边界
+以下为 **0.2.0 的历史界面截图**，同样来自 MuMu 实际运行，内容为合成教学材料；用于展示三页工作流，不代表新版本全流程验收。
 
-- Kotlin / Jetpack Compose Android 客户端，Room 保存疑问、待同步请求和最近缓存；离线可记录疑问、查看已缓存内容。
-- 本机 Python / SQLite 服务支持文字和可复制文本 PDF 导入、课程内词项检索、页码与版本引用、资料修订及撤回。
-- 默认合成死锁案例可体验解释、自测与自评。启用模型后，先确认端点、模型与问题，再发送最多 8 个词项候选片段；结论引用须通过结构、归属、原文位置和版本校验。不自动打分或标记“已掌握”。
-- 资料不足与冲突可作为模型结构化状态返回，服务端不生成正常自测卡；通用语义判断的准确性尚未验证。
-- 生成期间允许资料更新；写入前再次检查问题/资料/配置，过期结果丢弃。模型使用的上下文变更会保守地使整条解释待复核，撤回清理本机派生文本。
-- 相同请求 ID 已发送后不自动二次调用模型，超时或中断须先核对状态，再主动发起新的请求。
-- 写请求使用请求 ID 重试，资料版本冲突拒绝覆盖；无网络时缓存可能过期，需要同步确认最新来源状态。
+![0.2.0 历史截图：横屏疑问页，查看问题、解释和资料引用](docs/images/questions-wide.png)
 
-尚未完成真实供应商联调、语义效果评测、账户与课程成员权限、云端同步、OCR、语音、后台复习通知。`course_id` 与配置指纹都不是权限凭据。服务只监听 `127.0.0.1`，请勿改为公网服务。此版本不包含真实学生调研、学习成效或性能结论。
+<img src="docs/images/questions-portrait.png" width="250" alt="0.2.0 历史截图：竖屏疑问页"> <img src="docs/images/sources-portrait.png" width="250" alt="0.2.0 历史截图：资料与版本管理"> <img src="docs/images/review-portrait.png" width="250" alt="0.2.0 历史截图：独立作答与复习">
 
-## 目录
+## 答案如何留下可追溯的线索
 
-```text
-android/       原生客户端、Gradle wrapper、Room schema 与 JVM 测试
-server/        本地 HTTP 服务、数据依赖关系与固定案例解释器
-tests/         Python 领域回归测试
-fixtures/      合成教学文本与可复制文本 PDF
-scripts/       本地启动、测试和 MuMu 连接脚本
-docs/          AI 协作说明、导出清单及后续发布验证记录
-config/        无密钥模型配置示例（真实本机配置不提交）
+```mermaid
+flowchart LR
+    Q[课堂疑问] --> A[解释中的结论]
+    A --> E[原文片段与页码]
+    E --> V[资料版本]
+    R[复习卡] --> A
+    V -. 修订或撤回 .-> S[关联解释与卡片待复核]
 ```
 
-## 环境与服务启动
+- **引用能回到原文。** 服务端检查模型返回的结构、引用归属、原文位置与资料版本。引用定位正确，仍不等于结论已获语义证明；阅读者需要核对。
+- **资料变化会传到旧答案。** 生成期间允许资料更新；保存结果前再次检查问题、资料和配置，过期结果会被丢弃。模型用过的上下文变化时，整条解释和复习卡会保守地进入待复核。
+- **缺资料时可以停下来。** 没有词项候选就不发起模型请求。模型返回“资料不足”或“存在冲突”时，不生成正常自测卡；通用语义判断能力仍待评测。
+- **重试有明确边界。** 同一已发送请求 ID 不会重复调用模型；超时或中断后先同步核对，再主动发起新的生成。0.3.1 中，待同步请求返回服务端错误后仍会尝试刷新最新来源状态，并保留失败请求。
 
-需要 Python 3.11+；Android 构建使用 JDK 17、Android SDK 35、Build Tools 35.0.0。Gradle 8.11.1 由 wrapper 获取。安装 Android SDK Platform Tools，并让 `adb` 可在终端调用。首次构建需要联网下载依赖。
+### 模型接入：可选，且由你确认
 
-以下 PowerShell 命令从仓库根目录执行：
+支持配置 API 根地址、模型名和密钥环境变量，提供四种文本生成协议适配器：
+
+| 配置协议 | 接口类型 |
+| --- | --- |
+| `openai_chat` | OpenAI Chat Completions 兼容接口 |
+| `openai_responses` | Responses |
+| `anthropic_messages` | Anthropic Messages |
+| `gemini_generate_content` | Gemini generateContent |
+
+服务需要兼容所选协议；专有签名、特殊请求或响应格式需要新增适配器，并非任意 API 地址都能直接使用。配置示例见 [models.example.json](config/models.example.json)，兼容参数和重试方法见 [MODEL_SETUP.txt](MODEL_SETUP.txt)。
+
+**真实模型小范围联调已完成。** 2026-11-17，对一个 Chat Completions 兼容端点测试了两条合成教学用例：资源分配图问题返回带引用的解释；资料未提供实验统计时返回“资料不足”，没有编造统计或生成正常复习卡。同请求重放未重复调用，来源修订后解释与卡片进入待复核。这是该配置下的小范围行为验证；其余协议仍为本机模拟验证，不代表所有供应商兼容或通用回答质量达标。详情见 [验证记录](docs/VALIDATION.md)。
+
+## 在电脑与 Android 上跑起来
+
+### 1. 启动本机服务
+
+需要 **Python 3.11+**、Android SDK Platform Tools，并让 `adb` 可在终端调用。以下 PowerShell 命令从仓库根目录执行：
 
 ```powershell
 python -m venv .venv
@@ -67,65 +88,95 @@ $env:WENJI_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
 .\scripts\run_service.ps1
 ```
 
-服务使用 `http://127.0.0.1:8765`，数据保存在本地 `data/wenji.sqlite3`；按 Ctrl+C 停止。也可直接运行 `python -m server --db data/wenji.sqlite3 --port 8765`。不要在同一端口重复启动服务。
+服务监听 `http://127.0.0.1:8765`，数据保存在本地 `data/wenji.sqlite3`，按 Ctrl+C 停止。也可在相同 Python 环境中运行 `python -m server --db data/wenji.sqlite3 --port 8765`。不要在同一端口重复启动服务。
 
-启用模型时，把 `config/models.example.json` 复制为 `config/models.local.json`，选择档案并填写根地址和模型名，再运行 `.\scripts\run_model_service.ps1`。脚本会隐藏输入 API Key 并临时传给服务进程；不要把密钥写入 Android、JSON 或 Git。参数、各协议边界和失败重试方法见 [完整配置说明](MODEL_SETUP.txt)。不指定配置时仍是离线规则演示；配置错误不会静默切回演示。
+默认模式使用固定合成案例规则。若要启用模型，先停止旧服务，将 `config/models.example.json` 复制为 `config/models.local.json`，选择档案并填写协议、API 根地址和模型名，然后运行：
 
-## 构建 Android 调试包
+```powershell
+.\scripts\run_model_service.ps1
+```
 
-使用 Android Studio 打开 `android/`，选择 JDK 17 并配置 SDK；或在已设置 `JAVA_HOME` 和 `ANDROID_HOME` 的 PowerShell 中执行：
+脚本会在需要时隐藏输入 API Key，并临时传给服务进程。密钥不要写入 Android、JSON 或 Git。修改配置后需重启服务并在 Android 同步；配置错误不会静默切回演示。完整步骤见 [模型接入说明](MODEL_SETUP.txt)。
+
+### 2. 安装预览 APK 并连接服务
+
+从 [v0.3.1-preview 发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.3.1-preview) 下载 `wenji-0.3.1-preview.apk`。发布页附 APK SHA256；最低系统为 **Android 8.0（API 26）**。
+
+在另一个终端中查看已授权的设备，将下面的设备编号和 APK 路径换成实际值：
+
+```powershell
+adb devices
+adb -s <设备编号> install -r <APK路径>
+adb -s <设备编号> reverse tcp:8765 tcp:8765
+```
+
+然后打开问迹并同步。当前验证环境为 MuMu Android 12；实体手机安装、软键盘和不同输入法体验仍待验证。这是调试 APK，不含正式发行签名配置或应用商店发布材料。
+
+### 3. 走一遍“有环是否死锁”
+
+1. 在资料页粘贴 [`fixtures/resource_graph_v1.txt`](fixtures/resource_graph_v1.txt)，或通过系统文件选择器导入 `resource_graph_v1.pdf`。
+2. 记录“资源分配图有环，是否一定死锁？”，保存并同步，再查找依据，核对引用页码与版本。
+3. 进入复习，先独立输入答案，再查看参考关键点、自评并安排复习。
+4. **在原资料上执行修订**，使用 [`resource_graph_v2.txt`](fixtures/resource_graph_v2.txt)，观察旧解释与旧卡进入待复核。另行导入一份资料不会修订原资料。
+5. 撤回资料，检查来源警示。服务会清除相关正文及派生引用；历史个人作答仍保留，离线设备需同步后才能获知变更。
+
+[`conflicting_material.txt`](fixtures/conflicting_material.txt) 和 [`insufficient_question.txt`](fixtures/insufficient_question.txt) 可用于合成冲突与资料不足场景。所有演示材料均为开发编写，不是真实课堂采样。
+
+## 从源码构建与检查
+
+Android 构建需要 **JDK 17、Android SDK 35、Build Tools 35.0.0**；Gradle 8.11.1 由 wrapper 获取，首次构建需要联网下载依赖。
+
+用 Android Studio 打开 `android/` 并配置 JDK 与 SDK；或在已设置 `JAVA_HOME` 和 `ANDROID_HOME` 的 PowerShell 中执行：
 
 ```powershell
 .\android\build-local.ps1 -Tasks assembleDebug,lintDebug,testDebugUnitTest
 ```
 
-生成的 APK 位于 `android/app/build/outputs/apk/debug/app-debug.apk`。最低系统为 Android 8.0（API 26）。这是调试构建，不含正式发行签名配置或应用商店发布材料。
+APK 输出到 `android/app/build/outputs/apk/debug/app-debug.apk`。后端检查可运行：
 
-## 在本机 MuMu 运行
+```powershell
+.\scripts\test.ps1
+```
 
-启动 MuMu Android 实例，开启其 ADB 调试能力，并在 MuMu 配置中确认本地 ADB 端口。该端口可能随实例变化；以下 `16384` 仅是脚本默认值。先完成上面的 Android 构建和 Python 依赖安装。
+Python 测试使用内存或临时数据库，HTTP smoke 启动临时回环服务，不改动演示数据库；原始日志写入被 Git 忽略的本地 `reports/`。若运行环境阻止回环连接，应在允许 localhost 的本机终端复验。各版本通过的构建、自动化检查和视觉检查范围见 [VALIDATION.md](docs/VALIDATION.md)。
 
-在另一终端中设置同一虚拟环境并运行：
+### MuMu 辅助脚本
+
+完成源码构建和 Python 依赖安装后，启动 MuMu 实例并确认其 ADB 调试端口。`16384` 只是脚本默认值，请按实例配置调整。在另一终端执行：
 
 ```powershell
 $env:WENJI_PYTHON = (Resolve-Path .\.venv\Scripts\python.exe).Path
 .\scripts\connect_mumu.ps1 -AdbPort 16384
 ```
 
-脚本连接所选实例、安装调试 APK、建立 `adb reverse tcp:8765 tcp:8765`，把合成 PDF 复制到 `Download/Wenji` 并启动应用。如 8765 端口没有现成服务，它会启动后台本机服务，使用 `data/mumu-demo.sqlite3`，进程 ID 与日志写入被 Git 忽略的 `reports/mumu/`。结束演示后可按该进程 ID 停止这个本地服务。
+脚本连接实例、安装当前构建的调试 APK、建立端口转发，将合成 PDF 放入 `Download/Wenji` 并启动应用。若 8765 端口没有现成服务，会在后台启动固定案例服务，使用 `data/mumu-demo.sqlite3`；进程 ID 与日志写入 `reports/mumu/`，演示后可按该 ID 停止服务。要使用模型，应先启动上面的模型服务。
 
-也可手动执行（把设备编号替换为 `adb devices` 中已授权的目标）：
+也可用已有服务手动安装并复制材料：
 
 ```powershell
-adb devices
 .\android\install-debug.ps1 -DeviceId '127.0.0.1:16384' -IncludeFixtures
 ```
 
-实体手机也可使用已授权的 USB 调试连接和同一安装脚本。模拟器验证不能替代实体手机兼容性验证。MuMu 的自动化粘贴曾把快捷键注入为不可见控制字符，服务端已增加拒绝校验；这不表示所有输入法兼容性均已验证。
+### 目录导航
 
-## 体验合成案例
-
-1. 在资料页通过系统文件选择器导入 `Download/Wenji/resource_graph_v1.pdf`，或粘贴 `fixtures/resource_graph_v1.txt`。
-2. 记录“资源分配图有环，是否一定死锁？”，保存并同步，然后查找依据，核对引用页码与版本。
-3. 进入复习并先独立输入答案，再查看参考关键点、自评安排复习。
-4. 在原资料上执行修订，使用 `resource_graph_v2.txt`；旧解释与旧卡应进入待复核。另行导入新资料不会修订原资料。
-5. 撤回资料时，服务清除其正文及派生引用；历史个人作答仍保留并显示来源警示。离线设备需同步才能获知变更。
-
-`conflicting_material.txt` 和 `insufficient_question.txt` 用于合成冲突与资料不足场景。这些材料为开发演示编写，不是真实课堂采样。
-
-## 运行检查
-
-```powershell
-.\scripts\test.ps1
-.\android\build-local.ps1 -Tasks lintDebug,testDebugUnitTest
+```text
+android/       Kotlin / Compose 客户端、Room schema、Gradle wrapper 与 JVM 测试
+server/        Python 本机服务、资料依赖关系、规则解释器与模型适配器
+tests/         Python 领域回归测试
+fixtures/      合成教学文本与可复制文本 PDF
+scripts/       服务启动、自动化检查与 MuMu 连接脚本
+config/        无密钥模型配置示例
+docs/          验证记录、界面变更与 AI 协作说明
 ```
 
-Python 测试使用内存或临时数据库；HTTP smoke 自行启动临时回环服务，不改动演示数据库。原始运行日志写入本地 `reports/`，不会随源码提交。若受管理沙箱阻止回环连接，应在允许 localhost 的本机终端复验，并记录环境失败。
+## 数据与当前边界
 
-已完成的检查及仍待验证的范围见 [版本验证记录](docs/VALIDATION.md)，其中分别记录源码构建、软件测试和模拟器视觉检查，不将构建成功等同于完整产品验收。
+Android 使用 Room 保存疑问、待同步请求和最近缓存，电脑服务使用 SQLite。启用外部模型时，只发送本次问题和词项检索命中的最多 **8 个片段、合计 12000 字符**；原 PDF 文件与个人学习记录不随该生成请求上传，但片段可能含敏感内容，使用前需确认资料授权和服务商。撤回资料会清理本机相关文本，不能撤回服务商已收到的内容。
+
+目前没有账户认证、课程成员权限或云端同步，`course_id` 与配置指纹不是权限凭据。服务只监听 `127.0.0.1`，请保持本机使用；离线缓存可能过期，来源状态以同步后为准。OCR、语音、后台复习通知尚未实现，也尚无真实学生试用、学习成效或性能结论。
 
 ## AI 协作与许可
 
-代码及文档有 Codex 辅助开发，范围与限制见 [AI 协作说明](docs/AI_DEVELOPMENT.md)。协作摘要不代表任何人已独立完成、审查或理解全部实现。
+代码与文档由 Codex 辅助开发，实际分工和限制见 [AI 协作说明](docs/AI_DEVELOPMENT.md)。协作摘要不代表任何人已独立完成、审查或理解全部实现。
 
-本项目**尚未指定开源许可证**；公开源码不等同于授予复制、修改或再分发许可。第三方依赖及 Gradle wrapper 适用各自许可。本仓库不包含个人报名、签字或身份材料。
+本项目 **尚未指定开源许可证**；公开源码不等同于授予复制、修改或再分发许可。第三方依赖及 Gradle wrapper 适用各自许可。本仓库不包含个人报名、签字或身份材料。

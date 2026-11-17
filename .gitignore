@@ -8,19 +8,32 @@ reports/
 __pycache__/
 *.py[cod]
 *.sqlite
+*.sqlite-*
+*.sqlite.*
 *.sqlite3
 *.sqlite3-*
+*.sqlite3.*
 *.db
 *.db-*
+*.db.*
 *.log
 .env
 .env.*
 !.env.example
 *.local.json
 *.local.ps1
+*.local.*
+*.local
 *.pem
 *.key
 *.dpapi
+*.p12
+*.pfx
+credentials
+credentials.json
+credentials.toml
+secrets.json
+secrets.toml
 
 # Android local SDK, generated files and signing material
 **/.gradle/
