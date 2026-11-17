@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
@@ -37,18 +38,26 @@ internal fun ModelSettingsDialog(
     onUseDemo: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var protocol by remember { mutableStateOf(initial.protocol) }
-    var baseUrl by remember { mutableStateOf(initial.baseUrl) }
-    var model by remember { mutableStateOf(initial.model) }
+    var protocol by rememberSaveable { mutableStateOf(initial.protocol) }
+    var baseUrl by rememberSaveable { mutableStateOf(initial.baseUrl) }
+    var model by rememberSaveable { mutableStateOf(initial.model) }
     // Never use rememberSaveable or prefill the saved key. Closing/rotating discards an unsaved key.
     var apiKey by remember { mutableStateOf("") }
-    var maxTokens by remember { mutableStateOf(initial.maxOutputTokens.toString()) }
+    var maxTokens by rememberSaveable { mutableStateOf(initial.maxOutputTokens.toString()) }
     var choosingProtocol by remember { mutableStateOf(false) }
     var validationError by remember { mutableStateOf<String?>(null) }
     AlertDialog(
         onDismissRequest = { if (!saving) onDismiss() },
         properties = DialogProperties(securePolicy = SecureFlagPolicy.SecureOn),
-        title = { Text("手机模型设置", style = MaterialTheme.typography.titleLarge) },
+        title = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("手机模型设置", style = MaterialTheme.typography.titleLarge)
+                // Keep safe validation feedback visible even when the form is scrolled or the IME is open.
+                (validationError ?: error)?.takeIf { it.isNotBlank() }?.let {
+                    Text(it, color = WenjiColors.Red, style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("学习资料和记录保存在手机。需要 AI 时，手机直接联网调用你配置的模型服务。",
@@ -93,7 +102,6 @@ internal fun ModelSettingsDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number, imeAction = ImeAction.Done),
                     singleLine = true, modifier = Modifier.fillMaxWidth(),
                 )
-                (validationError ?: error)?.takeIf { it.isNotBlank() }?.let { Notice(it, Tone.Red) }
                 TextButton(onClick = onUseDemo, enabled = !saving) { Text("清除密钥并使用规则演示") }
                 Text("规则演示无需密钥或网络，仅用于固定案例；已有学习资料和记录会保留。",
                     style = MaterialTheme.typography.bodySmall, color = WenjiColors.Muted)

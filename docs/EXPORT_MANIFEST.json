@@ -14,13 +14,13 @@
   "source_files": [
     {
       "path": "MODEL_SETUP.txt",
-      "bytes": 12009,
-      "sha256": "90b01b96b8e22a9d1a0ba803c5619246b0a31c1f2ff0d37c537095c1c3f3ba58"
+      "bytes": 13399,
+      "sha256": "3637634e019e542bbc2daa582cae255a4294f5865238cd4fd92173821c6a2ecd"
     },
     {
       "path": "android/app/build.gradle.kts",
       "bytes": 3310,
-      "sha256": "6a883d14671ffcc0c82cc5bcd55e5238d6d21ca5a933eb90ae7d52c317bc1d2d"
+      "sha256": "82ee5cb6c8e105784917cad616a4a28b85ee16b4db652ad53ee59e504c31619f"
     },
     {
       "path": "android/app/schemas/org.wenji.study.LocalStore/1.json",
@@ -109,8 +109,8 @@
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/ModelSettingsDialog.kt",
-      "bytes": 7129,
-      "sha256": "518606a495b394284fe1795dbfe6468de012ef987a070b9eee4f063d3f27976d"
+      "bytes": 7529,
+      "sha256": "e8daf8d85ca6b0cfe4d0af2ce23218f728040af5d671a0053816df83177750cd"
     },
     {
       "path": "android/app/src/main/java/org/wenji/study/ModelSettingsForm.kt",

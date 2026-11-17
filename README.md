@@ -8,13 +8,13 @@
 
 问迹是一款 **Android 课堂疑问溯源与复习助手**。从记下一条疑问开始，它把问题、资料原文、页码、版本和复习卡连起来：查到解释后先核对依据，复习时先自己回答；资料修订或撤回后，相关解释与卡片会进入待复核状态。
 
-**本次版本：0.4.0 手机独立版开发预览** · Kotlin / Jetpack Compose · Chaquopy / Python / SQLite
+**本次版本：0.4.1 手机独立版开发预览** · Kotlin / Jetpack Compose · Chaquopy / Python / SQLite
 
-[下载手机独立版](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.0-preview) · [手机模型设置](MODEL_SETUP.txt) · [验证记录](docs/VALIDATION.md) · [AI 协作说明](docs/AI_DEVELOPMENT.md)
+[下载手机独立版](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.1-preview) · [手机模型设置](MODEL_SETUP.txt) · [验证记录](docs/VALIDATION.md) · [AI 协作说明](docs/AI_DEVELOPMENT.md)
 
 > 0.4 将资料处理、检索、引用核对和学习记录放进手机。日常使用无需电脑、Python 安装或 ADB 转发；默认固定案例可以离线完成。需要通用 AI 解释时，在应用内配置个人 API Key，由手机联网调用所选模型。
 
-版本为 `v0.4.0-preview`，APK 文件名为 `wenji-0.4.0-preview.apk`。已通过 67 项 Python 测试、26 项 Android JVM 测试，以及移除电脑端口转发后的 4 项 MuMu 设备测试。手机端真实供应商调用、实体手机兼容性与新版界面视觉检查仍待验证，范围详见验证记录。
+版本为 `v0.4.1-preview`（versionCode `6`），APK 文件名为 `wenji-0.4.1-preview.apk`。本次修复模型设置错误提示被藏在滚动底部的问题，并保留非密钥字段的旋转草稿。构建、26 项 JVM 测试与 Lint 检查通过，已在无 ADB 反向转发的 MuMu 中完成横竖屏错误可见性及协议草稿旋转复测。67 项 Python 与 4 项设备测试为 0.4.0 基线，本轮未重复执行。手机端真实供应商调用、实体手机、软键盘及有效手动作答仍未验证，范围详见[验证记录](docs/VALIDATION.md)。
 
 ## 从一条疑问开始
 
@@ -30,7 +30,7 @@
 
 ## 三步开始，不用连接电脑
 
-1. **安装并打开问迹。** 从[发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.0-preview)下载 `wenji-0.4.0-preview.apk`，在手机上直接安装。支持 **Android 8.0（API 26）及以上的 64 位 arm64 / x86_64 设备**，不支持仅有 32 位运行环境的设备。首次体验可保持规则演示模式。
+1. **安装并打开问迹。** 从[发布页](https://github.com/ChenYueqi2024/wenji/releases/tag/v0.4.1-preview)下载 `wenji-0.4.1-preview.apk`，在手机上直接安装；下载资产以发布页为准。支持 **Android 8.0（API 26）及以上的 64 位 arm64 / x86_64 设备**，不支持仅有 32 位运行环境的设备。首次体验可保持规则演示模式。
 2. **导入内置教材。** 打开“资料”，点击“导入内置合成教材”。两页可复制文本 PDF 已包含在 APK 中，无需额外下载。也可通过系统文件选择器导入自己的文本 PDF 或 UTF-8 文本。
 3. **从问题走到独立作答。** 记录“资源分配图有环，是否一定死锁？”，查找依据，核对原文、页码和版本；进入复习，先自己回答，再看参考关键点、自评并安排复习。
 
@@ -45,6 +45,16 @@
 0.4 使用新的手机学习空间，不自动迁移电脑数据库、旧手机缓存或旧待发送请求。原资料仍保留在电脑，旧 Room 数据也不主动删除。需要的资料可重新导入手机；旧学习记录目前没有自动迁移入口。手机模型设置同样需要重新填写，不会从电脑复制密钥。
 
 ## 看看界面
+
+### 0.4.1 手机独立版：疑问、资料与复习
+
+以下是 **0.4.1 在 MuMu 中的实际运行截图**，没有 ADB 反向转发，使用内置合成教材与固定规则解释；未调用真实模型。升级后资料与疑问保留，引用可查看原文、页码和文本位置，复习页仍要求先独立作答。
+
+<img src="docs/images/standalone-v041-citation-portrait.png" width="250" alt="0.4.1 疑问页：规则解释及可展开的原文、页码与文本位置"> <img src="docs/images/standalone-v041-sources-portrait.png" width="250" alt="0.4.1 资料页：手机内保存的两页合成教材"> <img src="docs/images/standalone-v041-review-portrait.png" width="250" alt="0.4.1 复习页：待独立作答，未自动标记掌握">
+
+[查看横屏设置错误提示](docs/images/standalone-v041-settings-error-wide.png)：空配置保存后的错误固定显示在标题下，滚动到底后仍可见，保存与取消按钮可达。协议菜单的四个选项完整，未保存的 Responses 协议选择在旋转后保留；未输入 API Key，其旋转丢弃行为只核对代码。
+
+此前 0.4.0 实查已完成内置两页 PDF 导入、演示疑问保存与规则解释生成。自动化粘贴和 BackSpace 输入注入控制字符，未提交有效作答；0.4.1 复测时复习草稿已清空，仍为待独立作答。本组截图不代表软键盘、真实输入法或完整手动作答流程已通过。
 
 ### 生成前确认，生成后查原文
 
@@ -126,9 +136,9 @@ APK 输出到 `android/app/build/outputs/apk/debug/app-debug.apk`。后端检查
 .\scripts\test.ps1
 ```
 
-目前通过 **67 项 Python 测试，其中 11 项覆盖手机进程内桥接**：离线 PDF 与学习流程、模型确认、配置切换、无效配置拒绝、进程中断保留请求等。测试使用临时数据库和合成凭证；桥接测试禁止 socket，协议测试使用临时回环模拟服务。它们不构成手机安装、Android Keystore、实际网络或真实模型调用的验收结果。
+0.4.0 已通过 **67 项 Python 测试，其中 11 项覆盖手机进程内桥接**：离线 PDF 与学习流程、模型确认、配置切换、无效配置拒绝、进程中断保留请求等。测试使用临时数据库和合成凭证；桥接测试禁止 socket，协议测试使用临时回环模拟服务。它们不构成手机安装、Android Keystore、实际网络或真实模型调用的验收结果。
 
-HTTP smoke 同样使用临时回环服务，不改动演示数据库；日志写入被 Git 忽略的本地 `reports/`。若运行环境阻止回环连接，应在允许 localhost 的本机终端复验。0.4 已构建并通过 26 项 JVM 和 4 项 MuMu 设备测试；包括失败恢复、Lint 提示和未完成范围的记录见 [VALIDATION.md](docs/VALIDATION.md)。当前为开发预览，不包含正式发行签名或应用商店发布材料。
+HTTP smoke 同样使用临时回环服务，不改动演示数据库；日志写入被 Git 忽略的本地 `reports/`。若运行环境阻止回环连接，应在允许 localhost 的本机终端复验。0.4.1 已完成离线构建、26 项 JVM 测试（0 失败、0 错误）及 Lint（0 错误、9 项提示），并完成上述 MuMu GUI 复测；共享学习核心未改，67 项 Python 与 4 项设备测试沿用 0.4.0 基线，未在本轮重跑。APK 校验信息、失败恢复与实际检查范围见 [VALIDATION.md](docs/VALIDATION.md)。当前为开发预览，不包含正式发行签名或应用商店发布材料。
 
 ### 可选：保留的电脑开发服务
 
